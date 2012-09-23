@@ -1,0 +1,1 @@
+Eazestom this is PHP Storm plugin for eaze cms support

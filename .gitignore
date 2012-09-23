@@ -19,6 +19,7 @@ nbproject
 
 # Always ignore these directories/files
 target
+out
 logs
 antarcticle-view/antarcticle-web-view/overlays
 
