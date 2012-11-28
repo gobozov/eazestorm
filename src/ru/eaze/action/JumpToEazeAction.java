@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import ru.eaze.MyGotoFileModel;
+import ru.eaze.Settings;
 import ru.eaze.domain.MyListElement;
 import ru.eaze.MyModel;
 import ru.eaze.MyPopup;
@@ -33,16 +34,16 @@ public class JumpToEazeAction extends AnAction implements DumbAware, MyModel.Cal
     private static String lastString = null;
     //private static Map<Class, Pair<String, Integer>> ourLastStrings = CollectionFactory.hashMap();
     private static Map<Class, Pair<String, Integer>> ourLastStrings = new HashMap<Class, Pair<String, Integer>>();
-        public JumpToEazeAction() {
 
-         }
+    public JumpToEazeAction() {
 
+    }
 
     public void actionPerformed(final AnActionEvent e) {
         myInAction = JumpToEazeAction.class;
         final Project project = e.getData(PlatformDataKeys.PROJECT);
+        Settings.initSettings(project);
         final Component component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT);
-
         String sourceRootsList = "";
         this.project = project;
         VirtualFile baseDir = project.getBaseDir();
