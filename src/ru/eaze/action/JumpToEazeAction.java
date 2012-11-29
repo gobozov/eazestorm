@@ -13,7 +13,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import ru.eaze.MyGotoFileModel;
-import ru.eaze.Settings;
+import ru.eaze.settings.Settings;
 import ru.eaze.domain.MyListElement;
 import ru.eaze.MyModel;
 import ru.eaze.MyPopup;
@@ -29,10 +29,10 @@ import java.util.Map;
  * Time: 10:36
  */
 public class JumpToEazeAction extends AnAction implements DumbAware, MyModel.Callback {
-    Project project;
+
+    private Project project;
+    private Settings settings;
     protected static Class myInAction = null;
-    private static String lastString = null;
-    //private static Map<Class, Pair<String, Integer>> ourLastStrings = CollectionFactory.hashMap();
     private static Map<Class, Pair<String, Integer>> ourLastStrings = new HashMap<Class, Pair<String, Integer>>();
 
     public JumpToEazeAction() {
@@ -41,15 +41,16 @@ public class JumpToEazeAction extends AnAction implements DumbAware, MyModel.Cal
 
     public void actionPerformed(final AnActionEvent e) {
         myInAction = JumpToEazeAction.class;
-        final Project project = e.getData(PlatformDataKeys.PROJECT);
-        Settings.initSettings(project);
+        project = e.getData(PlatformDataKeys.PROJECT);
         final Component component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT);
-        String sourceRootsList = "";
-        this.project = project;
+
+        settings = new Settings(project);
+
         VirtualFile baseDir = project.getBaseDir();
-        VirtualFile webDir = baseDir.findFileByRelativePath("web/");
+        VirtualFile webDir = baseDir.findFileByRelativePath(settings.getStringValue(Settings.KEY_WEB_DIR, "web"));
+
         if (webDir == null) {
-            Messages.showErrorDialog("Could not find 'web' directory! it should be in root folder of your project!", "EazeStorm");
+            Messages.showErrorDialog("Could not find 'web' directory! it should be in root folder of your project! Check web dir in settings.", "EazeStorm");
             return;
         }
         showNavigationPopup(e, new MyGotoFileModel(project, webDir), this, "bred");

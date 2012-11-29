@@ -1,10 +1,10 @@
 <idea-plugin version="2">
     <name>EazeStorm</name>
     <description>Eaze framework integration for PhpStorm
-        Authors: Sergey Svistunov (zenden2k@gmail.com)
+        Authors: Sergey Svistunov (zenden2k@gmail.com) Georgy Gobozov (gobozov@gmail.com)
     </description>
-    <version>0.2.1</version>
-    <vendor url="http://www.1adw.ru/" email="zenden2k@gmail.com">1ADW</vendor>
+    <version>0.3.1</version>
+    <vendor url="http://www.1adw.ru/" email="gobozov@gmail.com">1ADW</vendor>
     <idea-version since-build="8000"/>
 
     <application-components>
@@ -16,6 +16,7 @@
         <component>
             <implementation-class>ru.eaze.component.EazeStormProjectComponent</implementation-class>
         </component>
+
     </project-components>
 
     <depends>com.intellij.modules.platform</depends>
@@ -29,7 +30,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <psi.referenceContributor implementation="ru.eaze.MyPsiReferenceContributor"/>
         <!-- Add your extensions here -->
-        <applicationConfigurable instance="ru.eaze.ui.EazeSettingsPanel"/>
+        <projectConfigurable instance="ru.eaze.settings.EazeSettingsPanel"/>
     </extensions>
     <module-components>
         <component>
