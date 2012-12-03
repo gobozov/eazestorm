@@ -32,4 +32,8 @@ public class Settings {
     }
 
 
+    @NotNull
+    public Project getProject() {
+        return project;
+    }
 }

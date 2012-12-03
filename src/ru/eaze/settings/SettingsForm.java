@@ -1,5 +1,9 @@
 package ru.eaze.settings;
 
+import com.intellij.openapi.fileChooser.FileChooserDescriptor;
+import com.intellij.openapi.fileChooser.FileSystemTree;
+import com.intellij.openapi.fileChooser.FileSystemTreeFactory;
+import com.intellij.openapi.fileChooser.ex.FileSystemTreeFactoryImpl;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.uiDesigner.core.Spacer;
 import org.jetbrains.annotations.NotNull;
@@ -63,6 +67,16 @@ public class SettingsForm extends JPanel {
 
         cachePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, cachePanel.getPreferredSize().height));
         add(cachePanel);
+
+        FileSystemTreeFactory treeFactory = new FileSystemTreeFactoryImpl();
+        FileChooserDescriptor descriptor =  new FileChooserDescriptor(false, true, false, false,false,false);
+        descriptor.setIsTreeRootVisible(true);
+        descriptor.setRoots(settings.getProject().getBaseDir());
+        FileSystemTree tree = treeFactory.createFileSystemTree(settings.getProject(), descriptor);
+        add(tree.getTree());
+
+
+
 
     }
 
