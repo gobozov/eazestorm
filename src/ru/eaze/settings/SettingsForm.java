@@ -17,8 +17,11 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.util.Enumeration;
 
 /**
  * Created with IntelliJ IDEA.
@@ -30,12 +33,11 @@ import java.awt.*;
 public class SettingsForm extends JPanel {
 
     private Logger LOGGER = Logger.getInstance(SettingsForm.class);
-    @NotNull
-    private JTextField webDirTextField;
+
     @NotNull
     private Settings settings;
     private boolean isModified;
-    private String value;
+    private String pathValue;
 
     public SettingsForm(Settings settings) {
         this.settings = settings;
@@ -50,32 +52,6 @@ public class SettingsForm extends JPanel {
         gridWrapper.add(new JLabel());
         treePanel.add(gridWrapper, BorderLayout.NORTH);
 
-//        webDirTextField = new JTextField(settings.getStringValue(Settings.KEY_WEB_DIR, "web"));
-//
-//        webDirTextField.getDocument().addDocumentListener(new DocumentListener() {
-//            public void changedUpdate(DocumentEvent e) {
-//                isModified = true;
-//            }
-//
-//            public void removeUpdate(DocumentEvent e) {
-//                isModified = true;
-//            }
-//
-//            public void insertUpdate(DocumentEvent e) {
-//                isModified = true;
-//            }
-//        });
-//
-//
-//        @NotNull JPanel buttonWrapper = new JPanel(new GridLayout(1, 3));
-//        buttonWrapper.setBorder(IdeBorderFactory.createEmptyBorder(3));
-//        buttonWrapper.add(webDirTextField);
-//        buttonWrapper.add(new Spacer());
-//        buttonWrapper.add(new Spacer());
-//        cachePanel.add(buttonWrapper, BorderLayout.SOUTH);
-//
-//        cachePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, cachePanel.getPreferredSize().height));
-//        add(cachePanel);
 
         FileSystemTreeFactory treeFactory = new FileSystemTreeFactoryImpl();
         FileChooserDescriptor descriptor = new FileChooserDescriptor(false, true, false, false, false, false);
@@ -84,27 +60,39 @@ public class SettingsForm extends JPanel {
         final FileSystemTree tree = treeFactory.createFileSystemTree(settings.getProject(), descriptor);
         final JTree jTree = tree.getTree();
 
+
         jTree.addTreeSelectionListener(new TreeSelectionListener() {
             @Override
             public void valueChanged(TreeSelectionEvent e) {
 
-                if (e.getPath() != null){
-                    String webDirPath = e.getPath().getLastPathComponent().toString();
-                    LOGGER.info("WebDir lasp path = " + webDirPath);
-                    LOGGER.info("tree path = " + tree.getSelectedFile().getName());
-                    value = webDirPath;
+                if (e.getPath() != null) {
+                    //TreePath path = (TreePath) e.getPath().getLastPathComponent();
+                    pathValue = e.getPath().getLastPathComponent().toString();
                     isModified = true;
                 }
             }
         });
 
         String webDirPath = settings.getStringValue(Settings.KEY_WEB_DIR, "web");
+        VirtualFile vf = findDir(settings.getProject().getBaseDir(), webDirPath);
+        if (vf != null)
+            tree.select(vf, null);
+//        TreeModel treeModel = jTree.getModel();
+//        TreePath treePath = find((DefaultMutableTreeNode) jTree.getModel().getRoot(), webDirPath);
+//        if (treePath != null) {
+//            jTree.setSelectionPath(treePath);
+//            jTree.scrollPathToVisible(treePath);
+//        }
+
+
+        walk(jTree.getModel(), jTree.getModel().getRoot());
+
         //TreePath treePath = new TreePath(webDirPath);
         //jTree.expandPath(treePath);
         //jTree.getSelectionModel().setSelectionPath(null);
 
-       // VirtualFile webDir = settings.getProject().getBaseDir().findFileByRelativePath(webDirPath);
-       // tree.select(webDir, null);
+        // VirtualFile webDir = settings.getProject().getBaseDir().findFileByRelativePath(webDirPath);
+        // tree.select(webDir, null);
 
 //        if (settings.getStringValue(Settings.KEY_WEB_DIR, "web") != null){
 //            TreePath webDirPath = new TreePath(value);
@@ -119,10 +107,44 @@ public class SettingsForm extends JPanel {
 
     }
 
-    @NotNull
-    public JTextField getWebDirTextField() {
-        return webDirTextField;
+    protected VirtualFile findDir(VirtualFile root, String name){
+        for (VirtualFile vf: root.getChildren()){
+            if (vf.isDirectory() && vf.getName().equals(name)) return vf;
+            if (vf.isDirectory()){
+                VirtualFile file = findDir(vf, name);
+                if (file != null)
+                    return file;
+            }
+        }
+        return null;
     }
+
+    protected void walk(TreeModel model, Object o) {
+        int count = model.getChildCount(o);
+        for (int i = 0; i < count; i++) {
+            Object child = model.getChild(o, i);
+            if (model.isLeaf(child))
+                System.out.println(child.toString());
+            else
+                walk(model, child);
+        }
+    }
+
+    private TreePath find(DefaultMutableTreeNode root, String s) {
+        if (root == null)
+            return null;
+        @SuppressWarnings("unchecked")
+        Enumeration<DefaultMutableTreeNode> e = root.depthFirstEnumeration();
+        while (e.hasMoreElements()) {
+            DefaultMutableTreeNode node = e.nextElement();
+            if (node == null) continue;
+            if (node.toString().equalsIgnoreCase(s)) {
+                return new TreePath(node.getPath());
+            }
+        }
+        return null;
+    }
+
 
     public boolean isModified() {
         return isModified;
@@ -135,5 +157,13 @@ public class SettingsForm extends JPanel {
 
     public void setSettings(@NotNull Settings settings) {
         this.settings = settings;
+    }
+
+    public String getPathValue() {
+        return pathValue;
+    }
+
+    public void setPathValue(String pathValue) {
+        this.pathValue = pathValue;
     }
 }

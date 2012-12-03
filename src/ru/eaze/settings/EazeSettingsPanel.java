@@ -58,7 +58,7 @@ public class EazeSettingsPanel  implements Configurable {
 
     @Override
     public void apply() throws ConfigurationException {
-          settings.setStringValue(Settings.KEY_WEB_DIR, form.getWebDirTextField().getText());
+          settings.setStringValue(Settings.KEY_WEB_DIR, form.getPathValue());
     }
 
     @Override
