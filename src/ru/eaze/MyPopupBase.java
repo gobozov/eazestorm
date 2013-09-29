@@ -1155,7 +1155,7 @@ return uniqueElement == null ? Collections.emptyList() : Collections.singletonLi
             try {
                 super.processKeyEvent(e);
             } catch (NullPointerException e1) {
-                if (!Patches.SUN_BUG_6322854) {
+                if (!Patches.SUN_BUG_ID_6322854) {
                     throw e1;
                 }
             }
