@@ -711,7 +711,7 @@ public abstract class MyPopupBase {
                 close(false);
                 return Boolean.TRUE;
             }
-        }).setFocusable(true).setRequestFocus(true).setForceHeavyweight(true).setModalContext(false).setCancelOnClickOutside(false);
+        }).setFocusable(true).setRequestFocus(true).setModalContext(false).setCancelOnClickOutside(false);
 
         Point point = new Point(x, y);
         SwingUtilities.convertPointToScreen(point, layeredPane);
