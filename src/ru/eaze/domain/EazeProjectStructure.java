@@ -113,6 +113,9 @@ public class EazeProjectStructure {
     public static VirtualFile GetFileByActionTag(XmlTag actionTag) {
         PsiFile containingFile = actionTag.getContainingFile();
         VirtualFile virtualFile = containingFile.getVirtualFile();
+        if (virtualFile == null){
+            return null;
+        }
         String packageName = actionTag.getContainingFile().getName();
         packageName = packageName.replace(".xml", "");
         String actionName = actionTag.getAttribute("name").getValue().toString();

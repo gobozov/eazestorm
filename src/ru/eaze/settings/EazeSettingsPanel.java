@@ -7,8 +7,6 @@ import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.Nls;
-import ru.eaze.settings.Settings;
-import ru.eaze.settings.SettingsForm;
 
 import javax.swing.*;
 
@@ -30,7 +28,6 @@ public class EazeSettingsPanel  implements Configurable {
         return "EazeStorm";
     }
 
-    @Override
     public Icon getIcon() {
         return null;
     }
