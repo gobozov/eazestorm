@@ -36,7 +36,7 @@ public class MyGotoFileModel implements MyModel {
 
     public MyGotoFileModel(Project project, VirtualFile webDir) {
         myProject = project;
-        eazeProjectStructure = new EazeProjectStructure(project, webDir);
+        eazeProjectStructure = EazeProjectStructure.forProject(project);
         myMaxSize = WindowManagerEx.getInstanceEx().getFrame(project).getSize().width;
     }
 

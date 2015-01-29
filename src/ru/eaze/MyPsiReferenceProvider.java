@@ -30,8 +30,6 @@ import java.util.HashMap;
  */
 public class MyPsiReferenceProvider extends PsiReferenceProvider {
      public static final PsiReferenceProvider[] EMPTY_ARRAY = new PsiReferenceProvider[0];
-    HashMap<Project, EazeProjectStructure> structs = new HashMap<Project, EazeProjectStructure>();
-    //protected ru.eaze.domain.EazeProjectStructure projectStructure;
 
     static class StringMatch {
         private String name;
@@ -60,28 +58,14 @@ public class MyPsiReferenceProvider extends PsiReferenceProvider {
         }
     }
 
-    public EazeProjectStructure getEazeStructure(Project project) {
-        if ( structs.containsKey( project )) {
-            return structs.get( project );
-        }
-        VirtualFile baseDir = project.getBaseDir();
-        if (baseDir != null) {
-            VirtualFile webDir = baseDir.findFileByRelativePath("web/");
-            if (webDir != null) {
-                EazeProjectStructure projectStructure = new EazeProjectStructure(project, webDir);
-                structs.put( project, projectStructure );
-                return projectStructure;
-            }
-        }
-        return null;
-    }
     public  MyPsiReferenceProvider(){
     }
       @NotNull @Override
       public  PsiReference[] getReferencesByElement(@NotNull PsiElement element, @NotNull final ProcessingContext context) {
           Project project = element.getProject();
+          EazeProjectStructure structure = EazeProjectStructure.forProject(project);
           PsiFile psiFile = element.getContainingFile();
-              String fileName = psiFile.getName();
+          String fileName = psiFile.getName();
              // System.out.println( psiFile.getName() );
               boolean isPagesXml = fileName.equals("pages.xml");
           if ( element instanceof XmlTag ) {
@@ -93,7 +77,7 @@ public class MyPsiReferenceProvider extends PsiReferenceProvider {
                     XmlText text = textElements[0];
                     int offset = text.getStartOffsetInParent();
                     System.out.println(text.getText());
-                    PsiReference ref =   new EazeUriReference(text.getText(),/*textElements[0] */tag, new TextRange(offset, offset+text.getTextLength()), getEazeStructure(project), project);
+                    PsiReference ref =   new EazeUriReference(text.getText(),/*textElements[0] */tag, new TextRange(offset, offset+text.getTextLength()), structure, project);
                      return new PsiReference[]{ ref };
                 }
             } else if (tag.getName().equals("actions") || ( tag.getName().equals("action") && isPagesXml ) ) {
@@ -109,12 +93,12 @@ public class MyPsiReferenceProvider extends PsiReferenceProvider {
 
                         int start = offset + action.getStartOffset();
                         int len  = action.getLength();
-                        PsiReference ref =   new EazeActionReference(action.toString(), tag , new TextRange(start, start + len), getEazeStructure(project), project);
+                        PsiReference ref =   new EazeActionReference(action.toString(), tag , new TextRange(start, start + len), structure, project);
                          refs.add(ref);
                     }
 
                     if ( refs.size() != 0 ) {
-                       return refs.toArray(new PsiReference[0]);
+                       return refs.toArray(new PsiReference[refs.size()]);
                     }
                 }
             } else if ( tag.getName().equals("action")) {
@@ -141,7 +125,7 @@ public class MyPsiReferenceProvider extends PsiReferenceProvider {
                         XmlText text = textElements[0];
                         int offset = text.getStartOffsetInParent();
                         if (parentTag.getName().equals("action") && text.getTextLength() != 0) {
-                            PsiReference ref = new EazeActionPhpReference(parentTag, text.getText(), tag, new TextRange(offset, offset + text.getTextLength()), getEazeStructure(project), project);
+                            PsiReference ref = new EazeActionPhpReference(parentTag, text.getText(), tag, new TextRange(offset, offset + text.getTextLength()), structure, project);
                             return new PsiReference[]{ref};
                         }
                     }
@@ -160,31 +144,31 @@ public class MyPsiReferenceProvider extends PsiReferenceProvider {
                               int offset = attributeValue.getValueTextRange().getStartOffset();
                               offset -= attributeValue.getTextRange().getStartOffset();
                               int length = attributeValue.getValueTextRange().getLength();
-                              PsiReference ref =   new EazeActionPhpReference(parentTag,"somethin", attributeValue , new TextRange(offset, offset + length), getEazeStructure(project) , project);
+                              PsiReference ref =   new EazeActionPhpReference(parentTag,"somethin", attributeValue , new TextRange(offset, offset + length), structure , project);
                               return new PsiReference[]{ ref };
                           }
                       }
                   } else if ( isPagesXml && nameAttribute.getName().equals("shutdown") || nameAttribute.getName().equals("boot")) {
                     String actions = nameAttribute.getValue();
                       if ( actions.length() == 0) {
-                          return  new PsiReference[]{};
+                          return PsiReference.EMPTY_ARRAY;
                       }
                     ArrayList<PsiReference> refs = new ArrayList<PsiReference>();
                       StringMatch[] pageActions = getActionNamesFromString( actions );
                     int offset = 0;
                       if ( pageActions.length == 0 ) {
-                          return new PsiReference[]{};
+                          return PsiReference.EMPTY_ARRAY;
                       }
                         int attribValueOffset = attributeValue.getValueTextRange().getStartOffset();
                               attribValueOffset -= attributeValue.getTextRange().getStartOffset();
                     for( StringMatch action : pageActions){
                         int start = attribValueOffset + offset + action.getStartOffset();
                         int len  = action.getLength();
-                        PsiReference ref =   new EazeActionReference(action.toString(), attributeValue , new TextRange(start, start + len), getEazeStructure(project), project);
+                        PsiReference ref =   new EazeActionReference(action.toString(), attributeValue , new TextRange(start, start + len), structure, project);
                          refs.add(ref);
                     }
                       if ( refs.size() != 0 ) {
-                       return refs.toArray(new PsiReference[0]);
+                       return refs.toArray(new PsiReference[refs.size()]);
                       }
                   }
               }
@@ -210,11 +194,11 @@ public class MyPsiReferenceProvider extends PsiReferenceProvider {
                       startIndex = closingBracketIndex + 1;
 
                       String uri = text.substring( index, closingBracketIndex );
-                      PsiReference ref = new EazeUriReference(uri, element , new TextRange(index, closingBracketIndex), getEazeStructure(project), project);
+                      PsiReference ref = new EazeUriReference(uri, element , new TextRange(index, closingBracketIndex), structure, project);
                       refs.add(ref);
                   }
                       if ( refs.size() != 0 ) {
-                        return refs.toArray(new PsiReference[0]);
+                        return refs.toArray(new PsiReference[refs.size()]);
                       }
               }
           }
@@ -235,8 +219,9 @@ public class MyPsiReferenceProvider extends PsiReferenceProvider {
                       String uri = str.substring( textRange.getStartOffset(), textRange.getEndOffset());
                        int start = textRange.getStartOffset();
                       int len = textRange.getLength();
-                      if ( getEazeStructure(project).LooksLikeEazeUri( uri )) {
-                           PsiReference ref = new EazeUriReference(uri, element , new TextRange(start, start + len), getEazeStructure(project), project);
+
+                      if (structure != null && structure.LooksLikeEazeUri( uri )) {
+                           PsiReference ref = new EazeUriReference(uri, element , new TextRange(start, start + len), structure, project);
                           return new PsiReference[]{ ref };
                       }
 

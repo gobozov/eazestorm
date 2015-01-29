@@ -8,10 +8,12 @@ import com.intellij.psi.PsiManager;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import ru.eaze.util.RegexpUtils;
 
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by IntelliJ IDEA.
@@ -20,6 +22,34 @@ import java.util.*;
  * Time: 23:21
  */
 public class EazeProjectStructure {
+
+    private static final Map<Project,EazeProjectStructure> structures = new ConcurrentHashMap<Project, EazeProjectStructure>();
+
+    /**
+     * Returns the Eaze project structure for specified IntelliJ project if the given project contains {@code <web>} directory.
+     *
+     * @param project the object representing IntelliJ project whose Eaze structure to be returned
+     * @return the Eaze structure for the specified project, or {@code null} if the structure cannot be constructed
+     * @throws NullPointerException if the specified project is null
+     */
+    @Nullable
+    public static EazeProjectStructure forProject(Project project) {
+        EazeProjectStructure structure = structures.get(project);
+        if(structure == null) {
+            VirtualFile baseDir = project.getBaseDir();
+            if (baseDir != null) {
+                VirtualFile webDir = baseDir.findFileByRelativePath("web/");
+                if (webDir != null) {
+                    final EazeProjectStructure newStructure = new EazeProjectStructure(project, webDir);
+                    structure = structures.putIfAbsent(project, newStructure);
+                    if(structure == null) {
+                        structure = newStructure;
+                    }
+                }
+            }
+        }
+        return structure;
+    }
 
     private Project curProject;
     private VirtualFile webDir;
@@ -32,7 +62,7 @@ public class EazeProjectStructure {
     HashMap<String, String> currentChains = new HashMap<String, String>();
     XmlFile pagesXml;
 
-    public EazeProjectStructure(final Project project, VirtualFile projectWebDir) {
+    private EazeProjectStructure(final Project project, VirtualFile projectWebDir) {
         curProject = project;
         webDir = projectWebDir;
         init();
