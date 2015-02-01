@@ -3,9 +3,9 @@
     <description>Eaze framework integration for PhpStorm
         Authors: Sergey Svistunov (zenden2k@gmail.com) Georgy Gobozov (gobozov@gmail.com)
     </description>
-    <version>0.3.1</version>
+    <version>0.5.0</version>
     <vendor url="http://www.1adw.ru/" email="gobozov@gmail.com">1ADW</vendor>
-    <idea-version since-build="8000"/>
+    <idea-version since-build="129.0"/>
 
     <application-components>
         <!-- Add your application components here -->
@@ -20,6 +20,8 @@
     </project-components>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.jetbrains.php</depends>
+
     <actions>
         <!-- Add your actions here -->
         <action id="EazeStorm" class="ru.eaze.action.JumpToEazeAction" text="Jump to Eaze Action">
@@ -29,8 +31,11 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <psi.referenceContributor implementation="ru.eaze.MyPsiReferenceContributor"/>
+        <psi.referenceContributor implementation="ru.eaze.locale.EazeLocaleReferenceContributor"/>
         <!-- Add your extensions here -->
         <projectConfigurable instance="ru.eaze.settings.EazeSettingsPanel"/>
+
+        <fileBasedIndex implementation="ru.eaze.locale.EazeLocaleKeyIndex"/>
     </extensions>
     <module-components>
         <component>

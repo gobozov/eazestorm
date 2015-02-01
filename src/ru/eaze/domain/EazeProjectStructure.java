@@ -1,13 +1,15 @@
 package ru.eaze.domain;
 
+import com.intellij.ide.highlighter.XmlFileType;
+import com.intellij.openapi.fileTypes.StdFileTypes;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-//import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.util.RegexpUtils;
 
@@ -362,7 +364,7 @@ public class EazeProjectStructure {
                 }
             }
         }
-        return packageNames.toArray(new String[0]);
+        return packageNames.toArray(new String[packageNames.size()]);
     }
 
     public Object[] getFileNamesForURL(String urlStr, List<String> fileNames) {
@@ -491,7 +493,21 @@ public class EazeProjectStructure {
         return elements.toArray();
     }
 
+    @NotNull
+    public Collection<VirtualFile> getLocaleFiles() {
+        Collection<VirtualFile> files = new HashSet<VirtualFile>();
+        VirtualFile dir = webDir.findFileByRelativePath("etc/locale/");
+        if (dir != null && dir.isValid() && dir.isDirectory()) {
+            for (VirtualFile file : dir.getChildren()) {
+                if (!file.isDirectory() && file.isValid() && file.getFileType() == XmlFileType.INSTANCE) {
+                    files.add(file);
+                }
+            }
+        }
+        return files;
+    }
 
-
-
+    public boolean isLocaleFile(VirtualFile file) {
+        return getLocaleFiles().contains(file);
+    }
 }
