@@ -1,5 +1,6 @@
 package ru.eaze.locale;
 
+import com.intellij.lang.findUsages.LanguageFindUsages;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
@@ -7,6 +8,7 @@ import com.intellij.psi.PsiReferenceProvider;
 import com.intellij.psi.xml.XmlToken;
 import com.intellij.psi.xml.XmlTokenType;
 import com.intellij.util.ProcessingContext;
+import com.jetbrains.php.lang.PhpLanguage;
 import com.jetbrains.php.lang.psi.elements.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,14 +37,22 @@ public class EazeLocaleReferenceProvider extends PsiReferenceProvider {
 
     @NotNull
     public PsiReference[] getReferencesByElement(@NotNull StringLiteralExpression element, @NotNull ProcessingContext context) {
-        if (element.getContext() instanceof ParameterList) {
-            ParameterList paramList = (ParameterList) element.getContext();
-            if (isTranslateCall(paramList.getContext())) {
-                TextRange range = element.getValueRange();
-                return new PsiReference[] { new EazeLocaleReference(element, range) };
-            }
+        if (isLegalLocaleKeyLiteral(element)) {
+            TextRange range = element.getValueRange();
+            return new PsiReference[]{new EazeLocaleReference(element, range)};
         }
         return PsiReference.EMPTY_ARRAY;
+    }
+
+    private boolean isLegalLocaleKeyLiteral(StringLiteralExpression element) {
+        if (element.getContext() instanceof ParameterList) {
+            ParameterList paramList = (ParameterList) element.getContext();
+            return isTranslateCall(paramList.getContext());
+        }
+        if (element.getContext() instanceof AssignmentExpression) {
+            return  EazeLocaleUtil.isValidKey(element.getContents());
+        }
+        return false;
     }
 
     private boolean isTranslateCall(PsiElement element) {
