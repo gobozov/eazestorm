@@ -31,12 +31,14 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <psi.referenceContributor implementation="ru.eaze.MyPsiReferenceContributor"/>
-        <psi.referenceContributor implementation="ru.eaze.locale.EazeLocaleReferenceContributor"/>
-        <!-- Add your extensions here -->
         <projectConfigurable instance="ru.eaze.settings.EazeSettingsPanel"/>
 
+        <!-- Eaze Localization -->
         <fileBasedIndex implementation="ru.eaze.locale.EazeLocaleKeyIndex"/>
+        <pom.declarationSearcher implementation="ru.eaze.locale.EazeLocaleDeclarationSearcher"/>
+        <psi.referenceContributor implementation="ru.eaze.locale.reference.EazeLocaleReferenceContributor"/>
     </extensions>
+
     <module-components>
         <component>
             <implementation-class>ru.eaze.component.EazeStormModuleComponent</implementation-class>

@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeProjectStructure;
+import ru.eaze.locale.EazeLocaleUtil;
 
 import java.util.*;
 

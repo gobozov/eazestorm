@@ -1,16 +1,14 @@
-package ru.eaze.locale;
+package ru.eaze.locale.reference;
 
-import com.intellij.openapi.util.Iconable;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementResolveResult;
 import com.intellij.psi.PsiPolyVariantReferenceBase;
 import com.intellij.psi.ResolveResult;
 import com.intellij.psi.xml.XmlTag;
-import com.intellij.util.xml.model.gotosymbol.GoToSymbolProvider.BaseNavigationItem;
 import org.jetbrains.annotations.NotNull;
+import ru.eaze.locale.EazeLocaleKeyIndex;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement> {
@@ -34,7 +32,7 @@ public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement>
         ResolveResult[] results = new ResolveResult[declarations.size()];
         int i = 0;
         for (XmlTag tag : declarations) {
-            results[i++] = new PsiElementResolveResult(new BaseNavigationItem(tag, this.getValue(), tag.getIcon(Iconable.ICON_FLAG_READ_STATUS | Iconable.ICON_FLAG_VISIBILITY)));
+            results[i++] = new PsiElementResolveResult(new EazeLocaleNavigationElement(this.getElement(), tag, this.getValue()));
         }
         return results;
     }
