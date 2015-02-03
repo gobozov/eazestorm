@@ -17,12 +17,18 @@ import org.jetbrains.annotations.Nullable;
 
 public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclaredTarget, PsiNamedElement {
 
-    @NotNull private final PsiElement baseElement;
-    @NotNull private final TextRange valueRange;
+    private final PsiElement baseElement;
+    private final TextRange valueRange;
+    private final boolean softDeclaration;
 
-    EazeLocaleDeclaration(@NotNull PsiElement baseElement, @NotNull TextRange valueRange) {
+    protected EazeLocaleDeclaration(@NotNull PsiElement baseElement, @NotNull TextRange valueRange) {
+        this(baseElement, valueRange, false);
+    }
+
+    protected EazeLocaleDeclaration(@NotNull PsiElement baseElement, @NotNull TextRange valueRange, boolean softDeclaration) {
         this.baseElement = baseElement;
         this.valueRange = valueRange;
+        this.softDeclaration = softDeclaration;
     }
 
     @Override
@@ -172,6 +178,29 @@ public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclared
     }
 
     /**
+     * Returns the name of the element.
+     *
+     * @return the element name.
+     */
+    @Override
+    public String getName() {
+        return this.getValue();
+    }
+
+    /**
+     * Renames the element.
+     *
+     * @param name the new element name.
+     * @return the element corresponding to this element after the rename (either <code>this</code>
+     * or a different element if the rename caused the element to be replaced).
+     * @throws com.intellij.util.IncorrectOperationException if the modification is not supported or not possible for some reason.
+     */
+    @Override
+    public PsiElement setName(@NotNull String name) throws IncorrectOperationException {
+        throw new IncorrectOperationException();
+    }
+
+    /**
      * Returns the range of the locale key value relative to the element text
      * @return the range of the value relative to the element text
      */
@@ -202,26 +231,10 @@ public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclared
     }
 
     /**
-     * Returns the name of the element.
-     *
-     * @return the element name.
+     * Specifies if this declaration can be considered a soft declaration and allows invalid or incomplete key values
+     * @return true if the declaration allows invalid or incomplete keys, false otherwise
      */
-    @Override
-    public String getName() {
-        return this.getValue();
-    }
-
-    /**
-     * Renames the element.
-     *
-     * @param name the new element name.
-     * @return the element corresponding to this element after the rename (either <code>this</code>
-     * or a different element if the rename caused the element to be replaced).
-     * @throws com.intellij.util.IncorrectOperationException if the modification is not supported or not possible for some reason.
-     */
-    @Override
-    public PsiElement setName(@NotNull String name) throws IncorrectOperationException {
-        //TODO implementation
-        throw new IncorrectOperationException();
+    public boolean isSoft() {
+        return softDeclaration;
     }
 }

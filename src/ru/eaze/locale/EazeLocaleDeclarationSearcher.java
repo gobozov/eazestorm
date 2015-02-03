@@ -44,9 +44,11 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     }
 
     private static EazeLocaleDeclaration findDeclaration(StringLiteralExpression element) {
+        if (isTranslateCall(element)) {
+            return new EazeLocaleDeclaration(element, element.getValueRange());
+        }
         if (isLegalLocaleKeyLiteral(element)) {
-            TextRange range = element.getValueRange();
-            return new EazeLocaleDeclaration(element, range);
+            return new EazeLocaleDeclaration(element, element.getValueRange(), true);
         }
         return null;
     }
@@ -63,19 +65,19 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     }
 
     private static boolean isLegalLocaleKeyLiteral(StringLiteralExpression element) {
-        if (element.getContext() instanceof ParameterList) {
-            ParameterList paramList = (ParameterList) element.getContext();
-            return isTranslateCall(paramList.getContext());
-        }
         if (element.getContext() instanceof AssignmentExpression) {
             return  EazeLocaleUtil.isValidKey(element.getContents());
         }
         return false;
     }
 
-    private static boolean isTranslateCall(PsiElement element) {
-        return isLocaleLoaderTranslateCall(element)
-                || isTFunctionCall(element);
+    private static boolean isTranslateCall(StringLiteralExpression element) {
+        if (element.getContext() instanceof ParameterList) {
+            ParameterList paramList = (ParameterList) element.getContext();
+            return isLocaleLoaderTranslateCall(paramList.getContext())
+                    || isTFunctionCall(element);
+        }
+        return false;
     }
 
     private static boolean isLocaleLoaderTranslateCall(PsiElement element) {

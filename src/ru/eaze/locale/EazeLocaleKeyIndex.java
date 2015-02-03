@@ -122,12 +122,9 @@ public class EazeLocaleKeyIndex extends ScalarIndexExtension<String> {
                 }
                 Collection<XmlTag> result = new ArrayList<XmlTag>();
                 for (VirtualFile file : files) {
-                    PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
-                    if (psiFile != null && psiFile.isValid()) {
-                        XmlTag tag = EazeLocaleUtil.findTagForKey((XmlFile) psiFile, key);
-                        if (EazeLocaleUtil.isValueTag(tag)) {
-                            result.add(tag);
-                        }
+                    XmlTag tag = EazeLocaleUtil.findTagForKey(project, file, key);
+                    if (EazeLocaleUtil.isValueTag(tag)) {
+                        result.add(tag);
                     }
                 }
                 return result;

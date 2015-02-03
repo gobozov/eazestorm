@@ -1,9 +1,9 @@
 <idea-plugin version="2">
     <name>EazeStorm</name>
     <description>Eaze framework integration for PhpStorm
-        Authors: Sergey Svistunov (zenden2k@gmail.com) Georgy Gobozov (gobozov@gmail.com)
+        Authors: Sergey Svistunov (zenden2k@gmail.com) Georgy Gobozov (gobozov@gmail.com) Olesia Lavrichenko (lisovenok@gmail.com)
     </description>
-    <version>0.5.0</version>
+    <version>0.5.SNAPSHOT</version>
     <vendor url="http://www.1adw.ru/" email="gobozov@gmail.com">1ADW</vendor>
     <idea-version since-build="129.0"/>
 
