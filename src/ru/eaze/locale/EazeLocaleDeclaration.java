@@ -17,10 +17,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclaredTarget, PsiNamedElement {
 
-    @NotNull
-    private final PsiElement baseElement;
-    @NotNull
-    private final TextRange valueRange;
+    @NotNull private final PsiElement baseElement;
+    @NotNull private final TextRange valueRange;
 
     EazeLocaleDeclaration(@NotNull PsiElement baseElement, @NotNull TextRange valueRange) {
         this.baseElement = baseElement;
@@ -173,17 +171,34 @@ public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclared
         return ReferenceProvidersRegistry.getReferencesFromProviders(this);
     }
 
+    /**
+     * Returns the range of the locale key value relative to the element text
+     * @return the range of the value relative to the element text
+     */
     @NotNull
     public TextRange getValueRange() {
         return valueRange;
     }
 
+    /**
+     * Returns the value of the locale key for this element
+     * @return locale key value
+     */
     @NotNull
     public String getValue() {
         if (this.getText() != null) {
             return valueRange.substring(this.getText());
         }
         return "";
+    }
+
+    /**
+     * Returns the value range in the document occupied by the element
+     * @return the value text range
+     */
+    @NotNull
+    public TextRange getValueTextRange() {
+        return baseElement.getTextRange().cutOut(valueRange);
     }
 
     /**

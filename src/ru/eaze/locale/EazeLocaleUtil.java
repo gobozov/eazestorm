@@ -4,6 +4,7 @@ import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import org.apache.xerces.util.XMLChar;
 import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Pattern;
@@ -60,5 +61,14 @@ public class EazeLocaleUtil {
                 && tag.isValid()
                 && tag.getSubTags().length == 0
                 && !tag.getValue().getText().isEmpty();
+    }
+
+    @NotNull
+    public static String extractTagValue(XmlTag tag) {
+        if (!isValueTag(tag)) {
+            return "";
+        }
+        String value = tag.getValue().getTrimmedText();
+        return value;
     }
 }

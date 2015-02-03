@@ -37,6 +37,8 @@
         <fileBasedIndex implementation="ru.eaze.locale.EazeLocaleKeyIndex"/>
         <pom.declarationSearcher implementation="ru.eaze.locale.EazeLocaleDeclarationSearcher"/>
         <psi.referenceContributor implementation="ru.eaze.locale.reference.EazeLocaleReferenceContributor"/>
+        <annotator language="PHP" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
+        <elementDescriptionProvider implementation="ru.eaze.locale.EazeLocaleDescriptionProvider"/>
     </extensions>
 
     <module-components>
