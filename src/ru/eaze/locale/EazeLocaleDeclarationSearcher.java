@@ -15,9 +15,9 @@ import java.util.regex.Pattern;
 
 public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
 
-    private static final String LOCALE_LOADER_FQN = "\\LocaleLoader";
-    private static final String TRANSLATE_FQN = "\\Translate";
-    private static final String T_FQN = "\\T";
+    private static final String LOCALE_LOADER_CLASS_NAME = "LocaleLoader";
+    private static final String TRANSLATE_METHOD_NAME = "Translate";
+    private static final String T_FUNCTION = "T";
 
     private static  final Pattern LANG_PATTERN = Pattern.compile("\\{lang:(.+)\\}");
 
@@ -85,8 +85,8 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
             MethodReference methodRef = (MethodReference) element;
             if (methodRef.getClassReference() instanceof ClassReference) {
                 ClassReference classRef = (ClassReference) methodRef.getClassReference();
-                return LOCALE_LOADER_FQN.equals(classRef.getFQN())
-                        && TRANSLATE_FQN.equals(methodRef.getFQN());
+                return LOCALE_LOADER_CLASS_NAME.equals(classRef.getName())
+                        && TRANSLATE_METHOD_NAME.equals(methodRef.getName());
             }
         }
         return false;
@@ -95,7 +95,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     private static boolean isTFunctionCall(PsiElement element) {
         if(element instanceof FunctionReference) {
             FunctionReference funcRef = (FunctionReference) element;
-            return T_FQN.equals(funcRef.getFQN());
+            return T_FUNCTION.equals(funcRef.getName());
         }
         return false;
     }
