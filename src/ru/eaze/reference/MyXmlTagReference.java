@@ -25,12 +25,6 @@ public class MyXmlTagReference implements PsiReference {
         this.textRange = textRange;
         this.structure = structure;
         this.project = project;
-
-        if (getCanonicalText() == null) {
-            System.out.println("oops");
-        }
-        System.out.println(getCanonicalText() + " start= " + String.valueOf(textRange.getStartOffset()) + " length=" + String.valueOf(textRange.getLength()));
-        // super(astNode);
     }
 
     @Override

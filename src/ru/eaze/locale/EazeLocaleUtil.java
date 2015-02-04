@@ -18,11 +18,11 @@ public class EazeLocaleUtil {
     private EazeLocaleUtil() { }
 
     @NonNls
-    protected static final String LOCAL_FILE_ROOT_TAG_NAME = "language";
+    public static final String LOCAL_FILE_ROOT_TAG_NAME = "language";
     @NonNls
-    protected static final String LOCALE_KEY_DELIMITER = ".";
+    public static final String LOCALE_KEY_DELIMITER = ".";
 
-    private static final Pattern LOCALE_KEY_SPLIT_PATTERN = Pattern.compile(Pattern.quote(LOCALE_KEY_DELIMITER));
+    protected static final Pattern LOCALE_KEY_SPLIT_PATTERN = Pattern.compile(Pattern.quote(LOCALE_KEY_DELIMITER));
 
     public static boolean isValidKey(String key) {
         if (key == null || key.isEmpty()) {
@@ -92,5 +92,12 @@ public class EazeLocaleUtil {
         }
         String value = tag.getValue().getTrimmedText();
         return value;
+    }
+
+    public static String[] getKeyParts(String key) {
+        if (key == null || key.isEmpty()) {
+            return null;
+        }
+        return LOCALE_KEY_SPLIT_PATTERN.split(key);
     }
 }

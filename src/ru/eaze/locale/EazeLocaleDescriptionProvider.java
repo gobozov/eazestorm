@@ -1,5 +1,6 @@
 package ru.eaze.locale;
 
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.ElementDescriptionLocation;
 import com.intellij.psi.ElementDescriptionProvider;
 import com.intellij.psi.PsiElement;
@@ -19,7 +20,7 @@ public class EazeLocaleDescriptionProvider implements ElementDescriptionProvider
         if (element instanceof EazeLocaleNavigationElement) {
             EazeLocaleNavigationElement navElement = (EazeLocaleNavigationElement)element;
             if (location instanceof UsageViewShortNameLocation) {
-                return EazeLocaleUtil.extractTagValue(navElement.getTag());
+                return StringUtil.escapeXml(EazeLocaleUtil.extractTagValue(navElement.getTag()));
             }
             if (location instanceof UsageViewTypeLocation) {
                 return "";
