@@ -12,6 +12,7 @@ import com.intellij.xml.util.XmlStringUtil;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.locale.action.CreateLocaleIntentionAction;
+import ru.eaze.locale.action.EditLocaleIntentionAction;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +25,7 @@ public class EazeLocaleAnnotator implements Annotator {
     private static final String INVALID_MESSAGE = "Invalid Localization Key";
     private static final String INCOMPLETE_MESSAGE = "Incomplete Localization Key";
     private static final String NO_FILES_MESSAGES = "Missing Localization Files";
+    private static final String DEFAULT_INFO_MESSAGE = "Resolved Localization Key";
 
     /**
      * Annotates the specified PSI element.
@@ -81,10 +83,20 @@ public class EazeLocaleAnnotator implements Annotator {
                 for (VirtualFile file : localeFiles) {
                     annotation.registerFix(new CreateLocaleIntentionAction(declaration.getValue(), file));
                 }
+                registerEditActions(annotation, declaration.getValue(), containingFiles);
                 return;
             }
 
-            //TODO ChangeLocalization intention registration
+            String message = EazeLocaleUtil.createTextForAnnotation(declaration.getValue(), declaration.getProject());
+            message = message.isEmpty() ? DEFAULT_INFO_MESSAGE : message;
+            Annotation annotation = holder.createInfoAnnotation(declaration.getValueTextRange(), message);
+            registerEditActions(annotation, declaration.getValue(), containingFiles);
+        }
+    }
+
+    private void registerEditActions(Annotation annotation, String key, Collection<VirtualFile> files) {
+        for (VirtualFile file : files) {
+            annotation.registerFix(new EditLocaleIntentionAction(key, file));
         }
     }
 }

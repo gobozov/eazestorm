@@ -4,13 +4,18 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
+import com.intellij.util.indexing.FileBasedIndex;
 import org.apache.xerces.util.XMLChar;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class EazeLocaleUtil {
@@ -99,5 +104,32 @@ public class EazeLocaleUtil {
             return null;
         }
         return LOCALE_KEY_SPLIT_PATTERN.split(key);
+    }
+
+    @NotNull
+    public static String createTextForAnnotation(String key, Project project) {
+        String text = "";
+        Locale locale = Locale.getDefault();
+        Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyIndex.NAME, key, GlobalSearchScope.allScope(project));
+        for (VirtualFile file : files) {
+            PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+            if (psiFile == null || !psiFile.isValid() || !(psiFile instanceof XmlFile)) {
+                continue;
+            }
+            XmlFile xmlFile = (XmlFile) psiFile;
+            XmlTag tag = findTagForKey(xmlFile, key);
+            if (!isValueTag(tag)) {
+                continue;
+            }
+            if (text.isEmpty()) {
+                text = extractTagValue(tag) + " [" + file.getName() + "]";
+            }
+            XmlAttribute languageName = xmlFile.getRootTag().getAttribute("name");
+            if (languageName != null && locale.getLanguage().equals(languageName.getValue())) {
+                text = extractTagValue(tag) + " [" + file.getName() + "]";
+                return text;
+            }
+        }
+        return text;
     }
 }
