@@ -75,7 +75,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
         if (element.getContext() instanceof ParameterList) {
             ParameterList paramList = (ParameterList) element.getContext();
             return isLocaleLoaderTranslateCall(paramList.getContext())
-                    || isTFunctionCall(element);
+                    || isTFunctionCall(paramList.getContext());
         }
         return false;
     }

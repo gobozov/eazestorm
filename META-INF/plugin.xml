@@ -38,6 +38,7 @@
         <pom.declarationSearcher implementation="ru.eaze.locale.EazeLocaleDeclarationSearcher"/>
         <psi.referenceContributor implementation="ru.eaze.locale.reference.EazeLocaleReferenceContributor"/>
         <annotator language="PHP" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
+        <annotator language="XML" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
         <elementDescriptionProvider implementation="ru.eaze.locale.EazeLocaleDescriptionProvider"/>
     </extensions>
 
