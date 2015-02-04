@@ -16,6 +16,7 @@ import ru.eaze.util.RegexpUtils;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Created by IntelliJ IDEA.
@@ -25,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class EazeProjectStructure {
 
-    private static final Map<Project,EazeProjectStructure> structures = new ConcurrentHashMap<Project, EazeProjectStructure>();
+    private static final ConcurrentMap<Project,EazeProjectStructure> structures = new ConcurrentHashMap<Project, EazeProjectStructure>();
 
     /**
      * Returns the Eaze project structure for specified IntelliJ project if the given project contains {@code <web>} directory.
