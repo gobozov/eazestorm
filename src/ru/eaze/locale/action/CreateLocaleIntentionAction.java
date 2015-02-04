@@ -151,7 +151,7 @@ public class CreateLocaleIntentionAction extends BaseIntentionAction implements 
 
                 String[] keyParts = EazeLocaleUtil.getKeyParts(localeKey);
                 XmlTag tag = root;
-                StringBuilder processedKey = new StringBuilder();
+                final StringBuilder processedKey = new StringBuilder();
                 for (String keyPart : keyParts) {
                     if (processedKey.length() > 0) {
                         processedKey.append(EazeLocaleUtil.LOCALE_KEY_DELIMITER);
@@ -164,22 +164,20 @@ public class CreateLocaleIntentionAction extends BaseIntentionAction implements 
                         return;
                     }
                     if (subTag == null || !subTag.isValid()) {
-                        subTag = tag.createChildTag(keyPart, tag.getNamespace(), "", true);
+                        subTag = tag.createChildTag(keyPart, tag.getNamespace(), "", false);
                         tag.addSubTag(subTag, false);
+                        //document commit doesn't save the whole new PsiElement tree so we must commit new child immediately
+                        manager.doPostponedOperationsAndUnblockDocument(document);
+                        manager.commitDocument(document);
+                        subTag = manager.commitAndRunReadAction(new Computable<XmlTag>() {
+                            @Override
+                            public XmlTag compute() {
+                                return EazeLocaleUtil.findTagForKey(project, localeFile, processedKey.toString());
+                            }
+                        });
                     }
                     tag = subTag;
                 }
-
-                manager.doPostponedOperationsAndUnblockDocument(document);
-                manager.commitDocument(document);
-
-                //first document commit doesn't save new tag text applied with tag.getValue().setText(text)
-                tag = manager.commitAndRunReadAction(new Computable<XmlTag>() {
-                    @Override
-                    public XmlTag compute() {
-                        return EazeLocaleUtil.findTagForKey(project, localeFile, localeKey);
-                    }
-                });
                 tag.getValue().setText(text);
                 manager.doPostponedOperationsAndUnblockDocument(document);
                 manager.commitDocument(document);
