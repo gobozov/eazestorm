@@ -5,17 +5,14 @@ import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.indexing.FileBasedIndex;
-import com.intellij.xml.util.XmlStringUtil;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.locale.action.CreateLocaleIntentionAction;
 import ru.eaze.locale.action.EditLocaleIntentionAction;
 
 import java.util.Collection;
-import java.util.Collections;
 
 public class EazeLocaleAnnotator implements Annotator {
 
@@ -24,8 +21,8 @@ public class EazeLocaleAnnotator implements Annotator {
     private static final String PARTIAL_MISSING_MESSAGE = "Partially Missing Localization";
     private static final String INVALID_MESSAGE = "Invalid Localization Key";
     private static final String INCOMPLETE_MESSAGE = "Incomplete Localization Key";
-    private static final String NO_FILES_MESSAGES = "Missing Localization Files";
-    private static final String DEFAULT_INFO_MESSAGE = "Resolved Localization Key";
+    private static final String NO_FILES_MESSAGE = "Missing Localization Files";
+    private static final String DEFAULT_INFO_MESSAGe = "Resolved Localization Key";
 
     /**
      * Annotates the specified PSI element.
@@ -47,15 +44,16 @@ public class EazeLocaleAnnotator implements Annotator {
                 return;
             }
 
-            Collection<VirtualFile> containingFiles = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyIndex.NAME, declaration.getValue(), GlobalSearchScope.projectScope(declaration.getProject()));
-            Collection<VirtualFile> localeFiles = Collections.emptyList();
             EazeProjectStructure structure = EazeProjectStructure.forProject(declaration.getProject());
-            if (structure != null) {
-                localeFiles = structure.getLocaleFiles();
+            if (structure == null) {
+                return;
             }
+            Collection<VirtualFile> containingFiles = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyIndex.NAME, declaration.getValue(), structure.projectScope());
+            Collection<VirtualFile> localeFiles = structure.localeFiles();
             if (localeFiles.isEmpty()) {
                 if (!declaration.isSoft()) {
-                    holder.createErrorAnnotation(declaration.getValueTextRange(), NO_FILES_MESSAGES);
+                    holder.createErrorAnnotation(declaration.getValueTextRange(), NO_FILES_MESSAGE);
+                    return;
                 }
             }
 
@@ -88,7 +86,7 @@ public class EazeLocaleAnnotator implements Annotator {
             }
 
             String message = EazeLocaleUtil.createTextForAnnotation(declaration.getValue(), declaration.getProject());
-            message = message.isEmpty() ? DEFAULT_INFO_MESSAGE : message;
+            message = message.isEmpty() ? DEFAULT_INFO_MESSAGe : message;
             Annotation annotation = holder.createInfoAnnotation(declaration.getValueTextRange(), message);
             registerEditActions(annotation, declaration.getValue(), containingFiles);
         }

@@ -26,3 +26,5 @@ antarcticle-view/antarcticle-web-view/overlays
 # Maven release plugin files
 release.properties
 pom.xml.releaseBackup
+
+eazestorm.jar

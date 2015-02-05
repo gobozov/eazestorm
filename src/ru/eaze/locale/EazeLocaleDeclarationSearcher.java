@@ -9,6 +9,7 @@ import com.intellij.psi.xml.XmlTokenType;
 import com.intellij.util.Consumer;
 import com.jetbrains.php.lang.psi.elements.*;
 import org.jetbrains.annotations.Nullable;
+import ru.eaze.domain.EazeProjectStructure;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,6 +32,9 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
 
     @Nullable
     public static EazeLocaleDeclaration findDeclaration(PsiElement element) {
+        if (!EazeLocaleUtil.inScope(element)) {
+            return null;
+        }
         if (element instanceof EazeLocaleDeclaration) {
             return (EazeLocaleDeclaration)element;
         }

@@ -1,11 +1,13 @@
 package ru.eaze.domain;
 
 import com.intellij.ide.highlighter.XmlFileType;
-import com.intellij.openapi.fileTypes.StdFileTypes;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.search.GlobalSearchScopes;
+import com.intellij.psi.search.GlobalSearchScopesCore;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import org.apache.commons.lang.StringUtils;
@@ -495,7 +497,7 @@ public class EazeProjectStructure {
     }
 
     @NotNull
-    public Collection<VirtualFile> getLocaleFiles() {
+    public Collection<VirtualFile> localeFiles() {
         Collection<VirtualFile> files = new HashSet<VirtualFile>();
         VirtualFile dir = webDir.findFileByRelativePath("etc/locale/");
         if (dir != null && dir.isValid() && dir.isDirectory()) {
@@ -509,6 +511,11 @@ public class EazeProjectStructure {
     }
 
     public boolean isLocaleFile(VirtualFile file) {
-        return getLocaleFiles().contains(file);
+        return localeFiles().contains(file);
+    }
+
+    @NotNull
+    public GlobalSearchScope projectScope() {
+        return GlobalSearchScopesCore.directoryScope(curProject, webDir, true);
     }
 }

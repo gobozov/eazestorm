@@ -113,7 +113,11 @@ public class EazeLocaleKeyIndex extends ScalarIndexExtension<String> {
             public Collection<XmlTag> compute() {
                 final Collection<VirtualFile> files;
                 try {
-                    files = FileBasedIndex.getInstance().getContainingFiles(NAME, key, GlobalSearchScope.allScope(project));
+                    EazeProjectStructure structure = EazeProjectStructure.forProject(project);
+                    if (structure == null) {
+                        return Collections.emptyList();
+                    }
+                    files = FileBasedIndex.getInstance().getContainingFiles(NAME, key, structure.projectScope());
                 } catch (IndexNotReadyException ex) {
                     return Collections.emptyList();
                 }
