@@ -1,11 +1,11 @@
 package ru.eaze.locale;
 
+import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
-import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
@@ -16,7 +16,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeProjectStructure;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -56,7 +58,7 @@ public class EazeLocaleUtil {
         if (tags.length == 0 ||(tags.length == 1 && !key.endsWith(LOCALE_KEY_DELIMITER))) {
             return false;
         }
-        Collection<VirtualFile> files = structure.localeFiles();
+        Collection<VirtualFile> files = getLocaleFiles(project);
         for (VirtualFile file : files) {
             XmlTag tag = findTagForKey(project, file, tags[0]);
             if (tag != null) {
@@ -136,8 +138,7 @@ public class EazeLocaleUtil {
         if (!isValueTag(tag)) {
             return "";
         }
-        String value = tag.getValue().getTrimmedText();
-        return value;
+        return tag.getValue().getTrimmedText();
     }
 
     public static String[] getKeyParts(String key) {
@@ -155,7 +156,7 @@ public class EazeLocaleUtil {
             return text;
         }
         Locale locale = Locale.getDefault();
-        Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyIndex.NAME, key, EazeProjectStructure.forProject(project).projectScope());
+        Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyIndex.NAME, key, structure.projectScope());
         for (VirtualFile file : files) {
             PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
             if (psiFile == null || !psiFile.isValid() || !(psiFile instanceof XmlFile)) {
@@ -169,10 +170,13 @@ public class EazeLocaleUtil {
             if (text.isEmpty()) {
                 text = extractTagValue(tag) + " [" + file.getName() + "]";
             }
-            XmlAttribute languageName = xmlFile.getRootTag().getAttribute("name");
-            if (languageName != null && locale.getLanguage().equals(languageName.getValue())) {
-                text = extractTagValue(tag) + " [" + file.getName() + "]";
-                return text;
+            XmlTag root = xmlFile.getRootTag();
+            if (root != null && root.isValid()) {
+                XmlAttribute languageName = root.getAttribute("name");
+                if (languageName != null && locale.getLanguage().equals(languageName.getValue())) {
+                    text = extractTagValue(tag) + " [" + file.getName() + "]";
+                    return text;
+                }
             }
         }
         return text;
@@ -191,9 +195,50 @@ public class EazeLocaleUtil {
             return false;
         }
         EazeProjectStructure structure = EazeProjectStructure.forProject(element.getProject());
+        return structure != null && structure.projectScope().contains(file);
+    }
+
+    @NotNull
+    public static Collection<VirtualFile> getLocaleFiles(Project project) {
+        EazeProjectStructure structure = EazeProjectStructure.forProject(project);
         if (structure == null) {
+            return Collections.emptyList();
+        }
+        VirtualFile dir = structure.localeDirectory();
+        if (dir == null || !dir.isValid() || !dir.isDirectory()) {
+            return  Collections.emptyList();
+        }
+        Collection<VirtualFile> files = new ArrayList<VirtualFile>();
+        VirtualFile[] dirFiles = dir.getChildren();
+        for (VirtualFile file : dirFiles) {
+            if (file.isValid() && file.getFileType() == XmlFileType.INSTANCE) {
+                XmlFile xmlFile = (XmlFile)PsiManager.getInstance(project).findFile(file);
+                XmlTag root = xmlFile == null ? null : xmlFile.getRootTag();
+                if (root!= null && root.isValid() && root.getName().equals(LOCAL_FILE_ROOT_TAG_NAME)) {
+                    files.add(file);
+                }
+            }
+        }
+        return files;
+    }
+
+    public static boolean isLocaleFile(VirtualFile file, Project project) {
+        if (file == null || !file.isValid() || file.getFileType() != XmlFileType.INSTANCE) {
             return false;
         }
-        return structure.projectScope().contains(file);
+        EazeProjectStructure structure = EazeProjectStructure.forProject(project);
+        if (structure == null || !structure.projectScope().contains(file)) {
+            return false;
+        }
+        VirtualFile dir = structure.localeDirectory();
+        if (dir == null || !dir.isValid() || !dir.isDirectory()) {
+            return false;
+        }
+        if (dir.equals(file.getParent())) {
+            XmlFile xmlFile = (XmlFile)PsiManager.getInstance(project).findFile(file);
+            XmlTag root = xmlFile == null ? null : xmlFile.getRootTag();
+            return root!= null && root.isValid() && root.getName().equals(LOCAL_FILE_ROOT_TAG_NAME);
+        }
+        return false;
     }
 }

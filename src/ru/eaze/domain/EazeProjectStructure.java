@@ -496,22 +496,12 @@ public class EazeProjectStructure {
         return elements.toArray();
     }
 
-    @NotNull
-    public Collection<VirtualFile> localeFiles() {
-        Collection<VirtualFile> files = new HashSet<VirtualFile>();
-        VirtualFile dir = webDir.findFileByRelativePath("etc/locale/");
-        if (dir != null && dir.isValid() && dir.isDirectory()) {
-            for (VirtualFile file : dir.getChildren()) {
-                if (!file.isDirectory() && file.isValid() && file.getFileType() == XmlFileType.INSTANCE) {
-                    files.add(file);
-                }
-            }
+    @Nullable
+    public VirtualFile localeDirectory() {
+        if (!webDir.isValid()) {
+            return null;
         }
-        return files;
-    }
-
-    public boolean isLocaleFile(VirtualFile file) {
-        return localeFiles().contains(file);
+        return webDir.findFileByRelativePath("etc/locale/");
     }
 
     @NotNull

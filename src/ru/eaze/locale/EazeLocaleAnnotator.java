@@ -21,7 +21,6 @@ public class EazeLocaleAnnotator implements Annotator {
     private static final String SOFT_MISSING_MESSAGE = "Probable Missing Localization Key";
     private static final String PARTIAL_MISSING_MESSAGE = "Partially Missing Localization Key";
     private static final String INVALID_MESSAGE = "Invalid Localization Key";
-    private static final String INCOMPLETE_MESSAGE = "Incomplete Localization Key";
     private static final String NO_FILES_MESSAGE = "Missing Localization Files";
     private static final String DEFAULT_INFO_MESSAGE = "Localization Key";
 
@@ -51,7 +50,7 @@ public class EazeLocaleAnnotator implements Annotator {
                 return;
             }
             Collection<VirtualFile> containingFiles = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyIndex.NAME, declaration.getValue(), structure.projectScope());
-            Collection<VirtualFile> localeFiles = structure.localeFiles();
+            Collection<VirtualFile> localeFiles = EazeLocaleUtil.getLocaleFiles(declaration.getProject());
             if (localeFiles.isEmpty()) {
                 if (!declaration.isSoft()) {
                     holder.createErrorAnnotation(declaration.getValueTextRange(), NO_FILES_MESSAGE);

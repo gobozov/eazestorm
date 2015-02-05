@@ -6,21 +6,15 @@ import com.intellij.openapi.project.IndexNotReadyException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiManager;
-import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
-import com.intellij.psi.xml.XmlTagValue;
 import com.intellij.util.indexing.*;
 import com.intellij.util.indexing.FileBasedIndex.InputFilter;
 import com.intellij.util.io.EnumeratorStringDescriptor;
 import com.intellij.util.io.KeyDescriptor;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeProjectStructure;
-import ru.eaze.locale.EazeLocaleUtil;
 
 import java.util.*;
 
@@ -71,8 +65,7 @@ public class EazeLocaleKeyIndex extends ScalarIndexExtension<String> {
         @NotNull
         @Override
         public Map<String, Void> map(@NotNull FileContent inputData) {
-            EazeProjectStructure structure = EazeProjectStructure.forProject(inputData.getProject());
-            if(structure != null && structure.isLocaleFile(inputData.getFile())) {
+            if(EazeLocaleUtil.isLocaleFile(inputData.getFile(), inputData.getProject())) {
                 XmlTag root = ((XmlFile)inputData.getPsiFile()).getRootTag();
                 if (root != null && root.isValid() && root.getName().equals(EazeLocaleUtil.LOCAL_FILE_ROOT_TAG_NAME)) {
                     Map<String, Void> result = new HashMap<String, Void>();
