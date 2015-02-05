@@ -49,7 +49,17 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
 
     private static EazeLocaleDeclaration findDeclaration(StringLiteralExpression element) {
         if (isTranslateCall(element)) {
-            return new EazeLocaleDeclaration(element, element.getValueRange());
+            TextRange keyRange = element.getValueRange();
+            if (!EazeLocaleUtil.isValidKey(element.getContents())) {
+                int keyLength = EazeLocaleUtil.findKeyInString(element.getContents()).length();
+                if (keyLength == 0) {
+                    return null;
+                }
+                int start = element.getValueRange().getStartOffset();
+                int end = start + keyLength;
+                keyRange = new TextRange(start, end);
+            }
+            return new EazeLocaleDeclaration(element, keyRange);
         }
         if (isLegalLocaleKeyLiteral(element)) {
             return new EazeLocaleDeclaration(element, element.getValueRange(), true);
@@ -70,7 +80,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
 
     private static boolean isLegalLocaleKeyLiteral(StringLiteralExpression element) {
         if (element.getContext() instanceof AssignmentExpression) {
-            return  EazeLocaleUtil.isValidKey(element.getContents());
+            return  EazeLocaleUtil.deepIsValidKey(element.getContents(), element.getProject());
         }
         return false;
     }
@@ -78,8 +88,11 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     private static boolean isTranslateCall(StringLiteralExpression element) {
         if (element.getContext() instanceof ParameterList) {
             ParameterList paramList = (ParameterList) element.getContext();
-            return isLocaleLoaderTranslateCall(paramList.getContext())
-                    || isTFunctionCall(paramList.getContext());
+            boolean translate = isLocaleLoaderTranslateCall(paramList.getContext()) || isTFunctionCall(paramList.getContext());
+            if (translate) {
+                PsiElement[] params = paramList.getParameters();
+                return params.length > 0 && params[0].equals(element);
+            }
         }
         return false;
     }

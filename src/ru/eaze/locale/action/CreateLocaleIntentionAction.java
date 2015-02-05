@@ -28,7 +28,7 @@ public class CreateLocaleIntentionAction extends BaseIntentionAction implements 
     private static final String INVALID_KEY = "Invalid localization key";
     private static final String NOT_XML_FILE = "Not an XML file";
     private static final String NOT_FOUND_FILE = "Document not found";
-    private static final String INVALID_FILE = "Not a localization file";
+    private static final String INVALID_FILE = "Not a localization file. File was deleted or has invalid root tag.";
 
     private final VirtualFile localeFile;
     private final String localeKey;
@@ -77,11 +77,16 @@ public class CreateLocaleIntentionAction extends BaseIntentionAction implements 
     @NotNull
     @Override
     public String getText() {
-        String text = "Create localization in ";
-        if (localeFile != null && localeFile.isValid()) {
-            text += "[" + localeFile.getName() + "]";
+        String text = "Create ";
+        if (localeKey.endsWith(EazeLocaleUtil.LOCALE_KEY_DELIMITER)) {
+            text += "path \"" + localeKey.substring(0, localeKey.length() - 1) + "\" ";
         } else {
-            text += "new file";
+            text += "localization ";
+        }
+        if (localeFile != null && localeFile.isValid()) {
+            text += "in [" + localeFile.getName() + "]";
+        } else {
+            text += "in new file";
         }
         return text;
     }
@@ -102,6 +107,7 @@ public class CreateLocaleIntentionAction extends BaseIntentionAction implements 
      */
     @Override
     public void invoke(@NotNull final Project project, final Editor editor, PsiFile file) throws IncorrectOperationException {
+        //should not happen but just in case (blame declaration searcher or action creator)
         if (!EazeLocaleUtil.isValidKey(localeKey)) {
             Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
             return;
@@ -130,23 +136,26 @@ public class CreateLocaleIntentionAction extends BaseIntentionAction implements 
 
                 XmlTag root = ((XmlFile)psiFile).getRootTag();
                 if (root == null || !root.isValid() || !root.getName().equals(EazeLocaleUtil.LOCAL_FILE_ROOT_TAG_NAME)) {
-                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO root creation
                     return;
                 }
 
-                String text = Messages.showInputDialog(project, "Enter text for key " + localeKey, CreateLocaleIntentionAction.this.getText(), null, null, new InputValidator() {
-                    @Override
-                    public boolean checkInput(String inputString) {
-                        return inputString != null && !inputString.isEmpty();
-                    }
+                String text = null;
+                if (!localeKey.endsWith(EazeLocaleUtil.LOCALE_KEY_DELIMITER)) {
+                    Messages.showInputDialog(project, "Enter text for key " + localeKey, CreateLocaleIntentionAction.this.getText(), null, null, new InputValidator() {
+                        @Override
+                        public boolean checkInput(String inputString) {
+                            return inputString != null && !inputString.isEmpty();
+                        }
 
-                    @Override
-                    public boolean canClose(String inputString) {
-                        return inputString != null && !inputString.isEmpty();
+                        @Override
+                        public boolean canClose(String inputString) {
+                            return inputString != null && !inputString.isEmpty();
+                        }
+                    });
+                    if (text == null || text.isEmpty()) {
+                        return; //canceled
                     }
-                });
-                if (text == null || text.isEmpty()) {
-                    return; //canceled
                 }
 
                 String[] keyParts = EazeLocaleUtil.getKeyParts(localeKey);
@@ -178,9 +187,11 @@ public class CreateLocaleIntentionAction extends BaseIntentionAction implements 
                     }
                     tag = subTag;
                 }
-                tag.getValue().setText(text);
-                manager.doPostponedOperationsAndUnblockDocument(document);
-                manager.commitDocument(document);
+                if (text != null) {
+                    tag.getValue().setText(text);
+                    manager.doPostponedOperationsAndUnblockDocument(document);
+                    manager.commitDocument(document);
+                }
             }
         });
     }

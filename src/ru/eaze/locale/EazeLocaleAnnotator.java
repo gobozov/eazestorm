@@ -12,17 +12,18 @@ import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.locale.action.CreateLocaleIntentionAction;
 import ru.eaze.locale.action.EditLocaleIntentionAction;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class EazeLocaleAnnotator implements Annotator {
 
-    private static final String MISSING_MESSAGE = "Missing Localization";
-    private static final String SOFT_MISSING_MESSAGE = "Probable Missing Localization";
-    private static final String PARTIAL_MISSING_MESSAGE = "Partially Missing Localization";
+    private static final String MISSING_MESSAGE = "Missing Localization Key";
+    private static final String SOFT_MISSING_MESSAGE = "Probable Missing Localization Key";
+    private static final String PARTIAL_MISSING_MESSAGE = "Partially Missing Localization Key";
     private static final String INVALID_MESSAGE = "Invalid Localization Key";
     private static final String INCOMPLETE_MESSAGE = "Incomplete Localization Key";
     private static final String NO_FILES_MESSAGE = "Missing Localization Files";
-    private static final String DEFAULT_INFO_MESSAGe = "Resolved Localization Key";
+    private static final String DEFAULT_INFO_MESSAGE = "Localization Key";
 
     /**
      * Annotates the specified PSI element.
@@ -37,6 +38,7 @@ public class EazeLocaleAnnotator implements Annotator {
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
         EazeLocaleDeclaration declaration = EazeLocaleDeclarationSearcher.findDeclaration(element);
         if (declaration != null) {
+            //should not happen but just in case (blame declaration searcher)
             if (!EazeLocaleUtil.isValidKey(declaration.getValue())) {
                 if (!declaration.isSoft()) {
                     holder.createErrorAnnotation(declaration.getValueTextRange(), INVALID_MESSAGE);
@@ -57,24 +59,35 @@ public class EazeLocaleAnnotator implements Annotator {
                 }
             }
 
+            //missing or incomplete key
             if (containingFiles.isEmpty()) {
-                XmlTag tag = null;
+                Collection<VirtualFile> tagFiles = new ArrayList<VirtualFile>();
                 for (VirtualFile file : localeFiles) {
-                    tag = EazeLocaleUtil.findTagForKey(declaration.getProject(), file, declaration.getValue());
+                    XmlTag tag = EazeLocaleUtil.findTagForKey(declaration.getProject(), file, declaration.getValue());
+                    if (tag != null) {
+                        tagFiles.add(file);
+                    }
                 }
-                if (tag == null) {
+                if (tagFiles.isEmpty()) {
                     Annotation annotation = declaration.isSoft() ?
                             holder.createWeakWarningAnnotation(declaration.getValueTextRange(), SOFT_MISSING_MESSAGE) :
                             holder.createErrorAnnotation(declaration.getValueTextRange(), MISSING_MESSAGE);
                     for (VirtualFile file : localeFiles) {
                         annotation.registerFix(new CreateLocaleIntentionAction(declaration.getValue(), file));
                     }
-                } else if (!declaration.isSoft()) {
-                    holder.createErrorAnnotation(declaration.getValueTextRange(), INCOMPLETE_MESSAGE);
+                } else if (tagFiles.size() < localeFiles.size()) {
+                    Annotation annotation = declaration.isSoft() ?
+                            holder.createWeakWarningAnnotation(declaration.getValueTextRange(), SOFT_MISSING_MESSAGE) :
+                            holder.createWeakWarningAnnotation(declaration.getValueTextRange(), PARTIAL_MISSING_MESSAGE);
+                    localeFiles.removeAll(tagFiles);
+                    for (VirtualFile file : localeFiles) {
+                        annotation.registerFix(new CreateLocaleIntentionAction(declaration.getValue(), file));
+                    }
                 }
                 return;
             }
 
+            //key missing in some files (conflicts resolution not supported)
             if (localeFiles.size() > containingFiles.size()) {
                 Annotation annotation = holder.createWeakWarningAnnotation(declaration.getValueTextRange(), PARTIAL_MISSING_MESSAGE);
                 localeFiles.removeAll(containingFiles);
@@ -86,7 +99,7 @@ public class EazeLocaleAnnotator implements Annotator {
             }
 
             String message = EazeLocaleUtil.createTextForAnnotation(declaration.getValue(), declaration.getProject());
-            message = message.isEmpty() ? DEFAULT_INFO_MESSAGe : message;
+            message = message.isEmpty() ? DEFAULT_INFO_MESSAGE : message;
             Annotation annotation = holder.createInfoAnnotation(declaration.getValueTextRange(), message);
             registerEditActions(annotation, declaration.getValue(), containingFiles);
         }

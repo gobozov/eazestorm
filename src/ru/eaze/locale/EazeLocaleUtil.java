@@ -53,6 +53,9 @@ public class EazeLocaleUtil {
             return false;
         }
         String[] tags = LOCALE_KEY_SPLIT_PATTERN.split(key);
+        if (tags.length == 0 ||(tags.length == 1 && !key.endsWith(LOCALE_KEY_DELIMITER))) {
+            return false;
+        }
         Collection<VirtualFile> files = structure.localeFiles();
         for (VirtualFile file : files) {
             XmlTag tag = findTagForKey(project, file, tags[0]);
@@ -61,6 +64,23 @@ public class EazeLocaleUtil {
             }
         }
         return false;
+    }
+
+    @NotNull
+    public static String findKeyInString(@NotNull String str) {
+        StringBuilder key = new StringBuilder(str.length());
+        String[] keyParts = LOCALE_KEY_SPLIT_PATTERN.split(str);
+        for (String keyPart : keyParts) {
+            if (XMLChar.isValidName(keyPart)) {
+                key.append(keyPart);
+                if (key.length() < str.length()) {
+                    key.append(LOCALE_KEY_DELIMITER);
+                }
+            } else {
+                break;
+            }
+        }
+        return key.toString();
     }
 
     @Nullable
