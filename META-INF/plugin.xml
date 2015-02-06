@@ -5,14 +5,13 @@
     </description>
     <version>0.5.SNAPSHOT</version>
     <vendor url="http://www.1adw.ru/" email="gobozov@gmail.com">1ADW</vendor>
-    <idea-version since-build="129.0"/>
+    <idea-version since-build="139.0"/>
 
     <application-components>
         <!-- Add your application components here -->
     </application-components>
 
     <project-components>
-        <!-- Add your project components here -->
         <component>
             <implementation-class>ru.eaze.component.EazeStormProjectComponent</implementation-class>
         </component>
@@ -23,9 +22,12 @@
     <depends>com.jetbrains.php</depends>
 
     <actions>
-        <!-- Add your actions here -->
-        <action id="EazeStorm" class="ru.eaze.action.JumpToEazeAction" text="Jump to Eaze Action">
+        <action id="EazeStorm.JumpToEazeAction" class="ru.eaze.action.JumpToEazeAction" text="Jump to Eaze Action">
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift P"/>
+        </action>
+        <action class="ru.eaze.locale.action.ExportLocaleAction" id="EazeStorm.ExportLocalization" text="Export Localization" icon="EazeStormIcons.Export">
+            <keyboard-shortcut first-keystroke="ctrl shift T" keymap="$default"/>
+            <add-to-group group-id="EditorPopupMenu"/>
         </action>
     </actions>
 

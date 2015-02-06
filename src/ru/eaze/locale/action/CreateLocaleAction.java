@@ -1,7 +1,8 @@
 package ru.eaze.locale.action;
 
 import com.intellij.codeInsight.intention.impl.BaseIntentionAction;
-import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.Result;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -16,8 +17,8 @@ import com.intellij.psi.PsiManager;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.IncorrectOperationException;
-import org.jetbrains.annotations.NotNull;
 import icons.EazeStormIcons;
+import org.jetbrains.annotations.NotNull;
 import ru.eaze.locale.EazeLocaleUtil;
 
 import javax.swing.*;
@@ -106,59 +107,63 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
      * @param file    the file open in the editor.
      */
     @Override
-    public void invoke(@NotNull final Project project, final Editor editor, PsiFile file) throws IncorrectOperationException {
-        //should not happen but just in case (blame declaration searcher or action creator)
-        if (!EazeLocaleUtil.isValidKey(localeKey)) {
-            Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
-            return;
+    public void invoke(@NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
+        String text = null;
+        if (!localeKey.endsWith(EazeLocaleUtil.LOCALE_KEY_DELIMITER)) {
+            text = Messages.showInputDialog(project, "Enter text for key " + localeKey, CreateLocaleAction.this.getText(), null, null, new InputValidator() {
+                @Override
+                public boolean checkInput(String inputString) {
+                    return inputString != null && !inputString.isEmpty();
+                }
+
+                @Override
+                public boolean canClose(String inputString) {
+                    return inputString != null && !inputString.isEmpty();
+                }
+            });
+            if (text == null || text.isEmpty()) {
+                return; //canceled
+            }
+        }
+        createLocalization(project, localeFile, localeKey, text, false);
+    }
+
+    public static boolean createLocalization(final Project project, final VirtualFile file, final String key, final String text, final boolean silentMode) {
+        if (!EazeLocaleUtil.isValidKey(key)) {
+            if (!silentMode) Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
+            return false;
+        }
+        if (file == null || !file.isValid()) {
+            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO file creation
+            return false;
         }
 
-        ApplicationManager.getApplication().runWriteAction(new Runnable() {
-            @Override
-            public void run() {
-                if (localeFile == null || !localeFile.isValid()) {
-                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO file creation
-                    return;
-                }
+        final PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+        if (!(psiFile instanceof XmlFile)) {
+            if (!silentMode) Messages.showErrorDialog(project, NOT_XML_FILE, ERROR_TITLE);
+            return false;
+        }
+        final PsiDocumentManager manager = PsiDocumentManager.getInstance(psiFile.getProject());
+        final Document document = manager.getDocument(psiFile);
+        if (document == null) {
+            if (!silentMode) Messages.showErrorDialog(project, NOT_FOUND_FILE, ERROR_TITLE);
+            return false;
+        }
+        manager.doPostponedOperationsAndUnblockDocument(document);
 
-                PsiFile psiFile = PsiManager.getInstance(project).findFile(localeFile);
-                if (!(psiFile instanceof XmlFile)) {
-                    Messages.showErrorDialog(project, NOT_XML_FILE, ERROR_TITLE);
-                    return;
-                }
-                PsiDocumentManager manager = PsiDocumentManager.getInstance(psiFile.getProject());
-                Document document = manager.getDocument(psiFile);
-                if (document == null) {
-                    Messages.showErrorDialog(project, NOT_FOUND_FILE, ERROR_TITLE);
-                    return;
-                }
+        return new WriteCommandAction<Boolean>(project) {
+            @Override
+            protected void run(@NotNull Result<Boolean> result) throws Throwable {
                 manager.commitDocument(document);
 
                 XmlTag root = ((XmlFile)psiFile).getRootTag();
                 if (root == null || !root.isValid() || !root.getName().equals(EazeLocaleUtil.LOCAL_FILE_ROOT_TAG_NAME)) {
-                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO root creation
+                    if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO root creation
+                    result.setResult(false);
                     return;
                 }
 
-                String text = null;
-                if (!localeKey.endsWith(EazeLocaleUtil.LOCALE_KEY_DELIMITER)) {
-                    text = Messages.showInputDialog(project, "Enter text for key " + localeKey, CreateLocaleAction.this.getText(), null, null, new InputValidator() {
-                        @Override
-                        public boolean checkInput(String inputString) {
-                            return inputString != null && !inputString.isEmpty();
-                        }
-
-                        @Override
-                        public boolean canClose(String inputString) {
-                            return inputString != null && !inputString.isEmpty();
-                        }
-                    });
-                    if (text == null || text.isEmpty()) {
-                        return; //canceled
-                    }
-                }
-
-                String[] keyParts = EazeLocaleUtil.getKeyParts(localeKey);
+                String[] keyParts = EazeLocaleUtil.getKeyParts(key);
                 XmlTag tag = root;
                 final StringBuilder processedKey = new StringBuilder();
                 for (String keyPart : keyParts) {
@@ -167,9 +172,11 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
                     }
                     processedKey.append(keyPart);
                     XmlTag subTag = tag.findFirstSubTag(keyPart);
-                    if (EazeLocaleUtil.isValueTag(subTag)) {
-                        String message = "File [" + localeFile.getName() + "] contains value for key [" + processedKey.toString() + "].\n You should fix your localization files manually.";
-                        Messages.showErrorDialog(project, message, ERROR_TITLE);
+                    //second condition allows text replacement
+                    if (EazeLocaleUtil.isValueTag(subTag) && processedKey.length() < key.length() - EazeLocaleUtil.LOCALE_KEY_DELIMITER.length()) {
+                        String message = "File [" + file.getName() + "] contains value for key [" + processedKey.toString() + "].\n You should fix your localization files manually.";
+                        if (!silentMode) Messages.showErrorDialog(project, message, ERROR_TITLE);
+                        result.setResult(false);
                         return;
                     }
                     if (subTag == null || !subTag.isValid()) {
@@ -181,18 +188,21 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
                         subTag = manager.commitAndRunReadAction(new Computable<XmlTag>() {
                             @Override
                             public XmlTag compute() {
-                                return EazeLocaleUtil.findTagForKey(project, localeFile, processedKey.toString());
+                                return EazeLocaleUtil.findTagForKey(project, file, processedKey.toString());
                             }
                         });
                     }
                     tag = subTag;
                 }
+
                 if (text != null) {
                     tag.getValue().setText(text);
                     manager.doPostponedOperationsAndUnblockDocument(document);
                     manager.commitDocument(document);
                 }
+
+                result.setResult(true);
             }
-        });
+        }.execute().getResultObject();
     }
 }

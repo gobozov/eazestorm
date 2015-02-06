@@ -31,13 +31,16 @@ public class EazeLocaleUtil {
     @NonNls
     public static final String LOCALE_KEY_DELIMITER = ".";
 
-    protected static final Pattern LOCALE_KEY_SPLIT_PATTERN = Pattern.compile(Pattern.quote(LOCALE_KEY_DELIMITER));
+    private static final Pattern LOCALE_KEY_SPLIT_PATTERN = Pattern.compile(Pattern.quote(LOCALE_KEY_DELIMITER));
 
     public static boolean isValidKey(String key) {
         if (key == null || key.isEmpty()) {
             return false;
         }
         String[] keyParts = LOCALE_KEY_SPLIT_PATTERN.split(key);
+        if (keyParts.length == 0) { //dots only
+            return false;
+        }
         for (String keyPart : keyParts) {
             if (!XMLChar.isValidName(keyPart)) {
                 return false;
@@ -48,10 +51,6 @@ public class EazeLocaleUtil {
 
     public static boolean deepIsValidKey(String key, Project project) {
         if (!isValidKey(key)) {
-            return false;
-        }
-        EazeProjectStructure structure = EazeProjectStructure.forProject(project);
-        if (structure == null) {
             return false;
         }
         String[] tags = LOCALE_KEY_SPLIT_PATTERN.split(key);
@@ -66,6 +65,43 @@ public class EazeLocaleUtil {
             }
         }
         return false;
+    }
+
+    public static boolean canCreateKey(Project project, Collection<VirtualFile> files, String key) {
+        if (project == null) {
+            return false;
+        }
+        if (files == null || files.isEmpty()) {
+            return false;
+        }
+        if (!isValidKey(key)) {
+            return false;
+        }
+        for (VirtualFile file : files) {
+            if (file == null || !file.isValid()) {
+                continue;
+            }
+            //check key
+            XmlTag tag = findTagForKey(project, file, key);
+            if (tag != null && tag.getSubTags().length == 0) {
+                continue;
+            }
+            //check parents
+            int end = key.lastIndexOf(LOCALE_KEY_DELIMITER);
+            String subKey = end < 0 ? "" : key.substring(0, end);
+            while (subKey.length() > 0) {
+                tag = findTagForKey(project, file, subKey);
+                if (tag != null) {
+                    if (isValueTag(tag))
+                        return false;
+                    else
+                        break;  //acceptable parent
+                }
+                end = subKey.lastIndexOf(LOCALE_KEY_DELIMITER);
+                subKey = end < 0 ? "" : subKey.substring(0, end);
+            }
+        }
+        return true;
     }
 
     @NotNull
