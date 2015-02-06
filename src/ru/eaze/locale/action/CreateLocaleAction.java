@@ -1,13 +1,13 @@
 package ru.eaze.locale.action;
 
 import com.intellij.codeInsight.intention.impl.BaseIntentionAction;
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.InputValidator;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.Iconable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocumentManager;
@@ -17,30 +17,25 @@ import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
+import icons.EazeStormIcons;
 import ru.eaze.locale.EazeLocaleUtil;
 
 import javax.swing.*;
 
-public class EditLocaleIntentionAction extends BaseIntentionAction implements Iconable {
+public class CreateLocaleAction extends BaseIntentionAction implements Iconable {
 
-    private static final String ERROR_TITLE = "Edit Localization Error";
+    private static final String ERROR_TITLE = "Create Localization Error";
     private static final String INVALID_KEY = "Invalid localization key";
     private static final String NOT_XML_FILE = "Not an XML file";
     private static final String NOT_FOUND_FILE = "Document not found";
-    private static final String INVALID_FILE = "Not a localization file";
-    private static final String INVALID_TAG = "Tag not found in the file. Synchronize you project and retry.";
+    private static final String INVALID_FILE = "Not a localization file. File was deleted or has invalid root tag.";
 
     private final VirtualFile localeFile;
     private final String localeKey;
 
-    public EditLocaleIntentionAction(String localeKey, VirtualFile localeFile) {
+    public CreateLocaleAction(String localeKey, VirtualFile localeFile) {
         this.localeKey = localeKey;
         this.localeFile = localeFile;
-    }
-
-    @Override
-    public Icon getIcon(@IconFlags int flags) {
-        return AllIcons.Actions.EditSource;
     }
 
     /**
@@ -82,7 +77,23 @@ public class EditLocaleIntentionAction extends BaseIntentionAction implements Ic
     @NotNull
     @Override
     public String getText() {
-        return "Edit localization in [" + localeFile.getName() +"]";
+        String text = "Create ";
+        if (localeKey.endsWith(EazeLocaleUtil.LOCALE_KEY_DELIMITER)) {
+            text += "path \"" + localeKey.substring(0, localeKey.length() - 1) + "\" ";
+        } else {
+            text += "localization ";
+        }
+        if (localeFile != null && localeFile.isValid()) {
+            text += "in [" + localeFile.getName() + "]";
+        } else {
+            text += "in new file";
+        }
+        return text;
+    }
+
+    @Override
+    public Icon getIcon(@IconFlags int flags) {
+        return EazeStormIcons.QuickFix;
     }
 
     /**
@@ -95,7 +106,8 @@ public class EditLocaleIntentionAction extends BaseIntentionAction implements Ic
      * @param file    the file open in the editor.
      */
     @Override
-    public void invoke(final @NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
+    public void invoke(@NotNull final Project project, final Editor editor, PsiFile file) throws IncorrectOperationException {
+        //should not happen but just in case (blame declaration searcher or action creator)
         if (!EazeLocaleUtil.isValidKey(localeKey)) {
             Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
             return;
@@ -105,7 +117,7 @@ public class EditLocaleIntentionAction extends BaseIntentionAction implements Ic
             @Override
             public void run() {
                 if (localeFile == null || !localeFile.isValid()) {
-                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO file creation
                     return;
                 }
 
@@ -122,37 +134,64 @@ public class EditLocaleIntentionAction extends BaseIntentionAction implements Ic
                 }
                 manager.commitDocument(document);
 
-                XmlTag root = ((XmlFile) psiFile).getRootTag();
+                XmlTag root = ((XmlFile)psiFile).getRootTag();
                 if (root == null || !root.isValid() || !root.getName().equals(EazeLocaleUtil.LOCAL_FILE_ROOT_TAG_NAME)) {
-                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO root creation
                     return;
                 }
 
-                XmlTag tag = EazeLocaleUtil.findTagForKey((XmlFile) psiFile, localeKey);
-                if (tag == null || !tag.isValid()) {
-                    Messages.showErrorDialog(project, INVALID_TAG, ERROR_TITLE);
-                    return;
-                }
-                String originalText = EazeLocaleUtil.extractTagValue(tag);
+                String text = null;
+                if (!localeKey.endsWith(EazeLocaleUtil.LOCALE_KEY_DELIMITER)) {
+                    text = Messages.showInputDialog(project, "Enter text for key " + localeKey, CreateLocaleAction.this.getText(), null, null, new InputValidator() {
+                        @Override
+                        public boolean checkInput(String inputString) {
+                            return inputString != null && !inputString.isEmpty();
+                        }
 
-                String text = Messages.showInputDialog(project, "Enter text for key " + localeKey, EditLocaleIntentionAction.this.getText(), null, originalText, new InputValidator() {
-                    @Override
-                    public boolean checkInput(String inputString) {
-                        return inputString != null && !inputString.isEmpty();
+                        @Override
+                        public boolean canClose(String inputString) {
+                            return inputString != null && !inputString.isEmpty();
+                        }
+                    });
+                    if (text == null || text.isEmpty()) {
+                        return; //canceled
                     }
-
-                    @Override
-                    public boolean canClose(String inputString) {
-                        return inputString != null && !inputString.isEmpty();
-                    }
-                });
-                if (text == null || text.isEmpty()) {
-                    return; //canceled
                 }
 
-                tag.getValue().setText(text);
-                manager.doPostponedOperationsAndUnblockDocument(document);
-                manager.commitDocument(document);
+                String[] keyParts = EazeLocaleUtil.getKeyParts(localeKey);
+                XmlTag tag = root;
+                final StringBuilder processedKey = new StringBuilder();
+                for (String keyPart : keyParts) {
+                    if (processedKey.length() > 0) {
+                        processedKey.append(EazeLocaleUtil.LOCALE_KEY_DELIMITER);
+                    }
+                    processedKey.append(keyPart);
+                    XmlTag subTag = tag.findFirstSubTag(keyPart);
+                    if (EazeLocaleUtil.isValueTag(subTag)) {
+                        String message = "File [" + localeFile.getName() + "] contains value for key [" + processedKey.toString() + "].\n You should fix your localization files manually.";
+                        Messages.showErrorDialog(project, message, ERROR_TITLE);
+                        return;
+                    }
+                    if (subTag == null || !subTag.isValid()) {
+                        subTag = tag.createChildTag(keyPart, tag.getNamespace(), "", false);
+                        tag.addSubTag(subTag, false);
+                        //document commit doesn't save the whole new PsiElement tree so we must commit new child immediately
+                        manager.doPostponedOperationsAndUnblockDocument(document);
+                        manager.commitDocument(document);
+                        subTag = manager.commitAndRunReadAction(new Computable<XmlTag>() {
+                            @Override
+                            public XmlTag compute() {
+                                return EazeLocaleUtil.findTagForKey(project, localeFile, processedKey.toString());
+                            }
+                        });
+                    }
+                    tag = subTag;
+                }
+                if (text != null) {
+                    tag.getValue().setText(text);
+                    manager.doPostponedOperationsAndUnblockDocument(document);
+                    manager.commitDocument(document);
+                }
             }
         });
     }

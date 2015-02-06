@@ -9,8 +9,8 @@ import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.indexing.FileBasedIndex;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
-import ru.eaze.locale.action.CreateLocaleIntentionAction;
-import ru.eaze.locale.action.EditLocaleIntentionAction;
+import ru.eaze.locale.action.CreateLocaleAction;
+import ru.eaze.locale.action.EditLocaleAction;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,7 +72,7 @@ public class EazeLocaleAnnotator implements Annotator {
                             holder.createWeakWarningAnnotation(declaration.getValueTextRange(), SOFT_MISSING_MESSAGE) :
                             holder.createErrorAnnotation(declaration.getValueTextRange(), MISSING_MESSAGE);
                     for (VirtualFile file : localeFiles) {
-                        annotation.registerFix(new CreateLocaleIntentionAction(declaration.getValue(), file));
+                        annotation.registerFix(new CreateLocaleAction(declaration.getValue(), file));
                     }
                 } else if (tagFiles.size() < localeFiles.size()) {
                     Annotation annotation = declaration.isSoft() ?
@@ -80,7 +80,7 @@ public class EazeLocaleAnnotator implements Annotator {
                             holder.createWeakWarningAnnotation(declaration.getValueTextRange(), PARTIAL_MISSING_MESSAGE);
                     localeFiles.removeAll(tagFiles);
                     for (VirtualFile file : localeFiles) {
-                        annotation.registerFix(new CreateLocaleIntentionAction(declaration.getValue(), file));
+                        annotation.registerFix(new CreateLocaleAction(declaration.getValue(), file));
                     }
                 }
                 return;
@@ -91,7 +91,7 @@ public class EazeLocaleAnnotator implements Annotator {
                 Annotation annotation = holder.createWeakWarningAnnotation(declaration.getValueTextRange(), PARTIAL_MISSING_MESSAGE);
                 localeFiles.removeAll(containingFiles);
                 for (VirtualFile file : localeFiles) {
-                    annotation.registerFix(new CreateLocaleIntentionAction(declaration.getValue(), file));
+                    annotation.registerFix(new CreateLocaleAction(declaration.getValue(), file));
                 }
                 registerEditActions(annotation, declaration.getValue(), containingFiles);
                 return;
@@ -106,7 +106,7 @@ public class EazeLocaleAnnotator implements Annotator {
 
     private void registerEditActions(Annotation annotation, String key, Collection<VirtualFile> files) {
         for (VirtualFile file : files) {
-            annotation.registerFix(new EditLocaleIntentionAction(key, file));
+            annotation.registerFix(new EditLocaleAction(key, file));
         }
     }
 }
