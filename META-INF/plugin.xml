@@ -42,6 +42,10 @@
         <annotator language="PHP" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
         <annotator language="XML" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
         <elementDescriptionProvider implementation="ru.eaze.locale.EazeLocaleDescriptionProvider"/>
+        <completion.contributor language="PHP" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionContributor"/>
+        <completion.contributor language="HTML" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionContributor"/>
+        <completion.confidence language="PHP" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.PHP"/>
+        <completion.confidence language="HTML" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.HTML"/>
     </extensions>
 
     <module-components>

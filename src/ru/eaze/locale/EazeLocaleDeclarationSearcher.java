@@ -4,6 +4,7 @@ import com.intellij.openapi.util.TextRange;
 import com.intellij.pom.PomDeclarationSearcher;
 import com.intellij.pom.PomTarget;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.impl.source.tree.LeafPsiElement;
 import com.intellij.psi.xml.XmlToken;
 import com.intellij.psi.xml.XmlTokenType;
 import com.intellij.util.Consumer;
@@ -43,6 +44,9 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
         }
         if (element instanceof XmlToken) {
             return findDeclaration((XmlToken)element);
+        }
+        if (element instanceof LeafPsiElement && element.getContext() instanceof StringLiteralExpression) {
+            return findDeclaration((StringLiteralExpression)element.getContext());
         }
         return null;
     }
