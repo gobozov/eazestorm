@@ -1,7 +1,6 @@
 package ru.eaze.locale.reference;
 
 import com.intellij.openapi.util.Iconable;
-import com.intellij.psi.PsiElement;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.xml.model.gotosymbol.GoToSymbolProvider.BaseNavigationItem;
 import ru.eaze.locale.EazeLocaleDeclaration;
@@ -25,6 +24,11 @@ public class EazeLocaleNavigationElement extends BaseNavigationItem {
 
     public XmlTag getTag() {
         return reference;
+    }
+
+    @Override
+    public String getName() {
+        return text;
     }
 
     @Override

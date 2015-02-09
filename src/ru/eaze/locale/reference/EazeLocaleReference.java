@@ -7,7 +7,6 @@ import com.intellij.psi.PsiPolyVariantReferenceBase;
 import com.intellij.psi.ResolveResult;
 import com.intellij.psi.xml.XmlTag;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.EazeLocaleKeyIndex;
 
@@ -40,13 +39,6 @@ public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement>
             results[i++] = new PsiElementResolveResult(new EazeLocaleNavigationElement(declaration, tag, declaration.getValue()));
         }
         return results;
-    }
-
-    @Nullable
-    @Override
-    public PsiElement resolve() {
-        ResolveResult[] results = multiResolve(false);
-        return results.length > 0 ? results[0].getElement() : declaration;
     }
 
     /**

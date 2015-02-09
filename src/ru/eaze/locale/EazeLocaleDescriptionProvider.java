@@ -4,6 +4,7 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.ElementDescriptionLocation;
 import com.intellij.psi.ElementDescriptionProvider;
 import com.intellij.psi.PsiElement;
+import com.intellij.usageView.UsageViewNodeTextLocation;
 import com.intellij.usageView.UsageViewShortNameLocation;
 import com.intellij.usageView.UsageViewTypeLocation;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +14,7 @@ import ru.eaze.locale.reference.EazeLocaleNavigationElement;
 public class EazeLocaleDescriptionProvider implements ElementDescriptionProvider {
 
     private static final String EAZE_LOCALE_KEY_TYPE = "Eaze Localization Key";
+    private static final String EAZE_LOCALE_VALUE_TYPE = "Eaze Localization";
 
     @Nullable
     @Override
@@ -23,7 +25,7 @@ public class EazeLocaleDescriptionProvider implements ElementDescriptionProvider
                 return StringUtil.escapeXml(EazeLocaleUtil.extractTagValue(navElement.getTag()));
             }
             if (location instanceof UsageViewTypeLocation) {
-                return "";
+                return EAZE_LOCALE_VALUE_TYPE;
             }
         }
         if (element instanceof EazeLocaleDeclaration) {
@@ -33,6 +35,9 @@ public class EazeLocaleDescriptionProvider implements ElementDescriptionProvider
             }
             if (location instanceof UsageViewTypeLocation) {
                 return EAZE_LOCALE_KEY_TYPE;
+            }
+            if (location instanceof UsageViewNodeTextLocation) {
+                return declaration.getValue();
             }
         }
         return null;

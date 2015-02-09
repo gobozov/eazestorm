@@ -37,6 +37,7 @@
 
         <!-- Eaze Localization -->
         <fileBasedIndex implementation="ru.eaze.locale.EazeLocaleKeyIndex"/>
+        <fileBasedIndex implementation="ru.eaze.locale.findUsages.EazeLocaleUsagesIndex"/>
         <pom.declarationSearcher implementation="ru.eaze.locale.EazeLocaleDeclarationSearcher"/>
         <psi.referenceContributor implementation="ru.eaze.locale.reference.EazeLocaleReferenceContributor"/>
         <annotator language="PHP" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
@@ -46,6 +47,7 @@
         <completion.contributor language="HTML" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionContributor"/>
         <completion.confidence language="PHP" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.PHP"/>
         <completion.confidence language="HTML" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.HTML"/>
+        <findUsagesHandlerFactory implementation="ru.eaze.locale.findUsages.EazeLocaleFindUsagesHandlerFactory"/>
     </extensions>
 
     <module-components>

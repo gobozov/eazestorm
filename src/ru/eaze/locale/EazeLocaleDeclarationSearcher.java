@@ -33,7 +33,12 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
 
     @Nullable
     public static EazeLocaleDeclaration findDeclaration(PsiElement element) {
-        if (!EazeLocaleUtil.inScope(element)) {
+        return findDeclaration(element, true);
+    }
+
+    @Nullable
+    public static EazeLocaleDeclaration findDeclaration(PsiElement element, boolean checkScope) {
+        if (checkScope && !EazeLocaleUtil.inScope(element)) {
             return null;
         }
         if (element instanceof EazeLocaleDeclaration) {
