@@ -7,14 +7,19 @@ import com.intellij.psi.PsiPolyVariantReferenceBase;
 import com.intellij.psi.ResolveResult;
 import com.intellij.psi.xml.XmlTag;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.EazeLocaleKeyIndex;
 
 import java.util.Collection;
 
 public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement> {
 
-    public EazeLocaleReference(@NotNull PsiElement element, @NotNull TextRange range) {
-        super(element, range);
+    private final EazeLocaleDeclaration declaration;
+
+    public EazeLocaleReference(@NotNull EazeLocaleDeclaration declaration, @NotNull TextRange range) {
+        super(declaration, range);
+        this.declaration = declaration;
     }
 
     /**
@@ -32,9 +37,16 @@ public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement>
         ResolveResult[] results = new ResolveResult[declarations.size()];
         int i = 0;
         for (XmlTag tag : declarations) {
-            results[i++] = new PsiElementResolveResult(new EazeLocaleNavigationElement(this.getElement(), tag, this.getValue()));
+            results[i++] = new PsiElementResolveResult(new EazeLocaleNavigationElement(declaration, tag, declaration.getValue()));
         }
         return results;
+    }
+
+    @Nullable
+    @Override
+    public PsiElement resolve() {
+        ResolveResult[] results = multiResolve(false);
+        return results.length > 0 ? results[0].getElement() : declaration;
     }
 
     /**
@@ -49,7 +61,6 @@ public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement>
     @NotNull
     @Override
     public Object[] getVariants() {
-        // TODO: add implementation
         return new Object[0];
     }
 

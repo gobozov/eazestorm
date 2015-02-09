@@ -9,8 +9,8 @@ import com.intellij.psi.xml.XmlToken;
 import com.intellij.psi.xml.XmlTokenType;
 import com.intellij.util.Consumer;
 import com.jetbrains.php.lang.psi.elements.*;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.eaze.domain.EazeProjectStructure;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,7 +24,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     private static  final Pattern LANG_PATTERN = Pattern.compile("\\{lang:(.+)\\}");
 
     @Override
-    public void findDeclarationsAt(PsiElement element, int offsetInElement, Consumer<PomTarget> consumer) {
+    public void findDeclarationsAt(@NotNull PsiElement element, int offsetInElement, Consumer<PomTarget> consumer) {
         PomTarget declaration = findDeclaration(element);
         if (declaration != null) {
             consumer.consume(declaration);
@@ -83,10 +83,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     }
 
     private static boolean isLegalLocaleKeyLiteral(StringLiteralExpression element) {
-        if (element.getContext() instanceof AssignmentExpression) {
-            return  EazeLocaleUtil.deepIsValidKey(element.getContents(), element.getProject());
-        }
-        return false;
+        return element.getContext() instanceof AssignmentExpression && EazeLocaleUtil.deepIsValidKey(element.getContents(), element.getProject());
     }
 
     private static boolean isTranslateCall(StringLiteralExpression element) {
