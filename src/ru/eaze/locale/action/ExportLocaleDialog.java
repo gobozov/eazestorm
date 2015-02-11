@@ -45,7 +45,7 @@ public class ExportLocaleDialog extends JDialog {
     private Callback callback;
     private ListTableModel<FileSelectionModel> localeFiles;
 
-    public ExportLocaleDialog(@NotNull Project project, String initialText, Callback callback) {
+    public ExportLocaleDialog(@NotNull Project project, String initialText, String keyPrefix, Callback callback) {
         this.project = project;
         this.callback = callback;
 
@@ -53,6 +53,7 @@ public class ExportLocaleDialog extends JDialog {
         setModal(true);
         getRootPane().setDefaultButton(buttonOK);
 
+        localeKey.setText(keyPrefix);
         localeKey.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -69,6 +70,7 @@ public class ExportLocaleDialog extends JDialog {
                 validateInput();
             }
         });
+
         localeText.setText(initialText);
         localeText.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -114,6 +116,9 @@ public class ExportLocaleDialog extends JDialog {
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 onCancel();
+            }
+            public void windowOpened(WindowEvent e) {
+                localeKey.requestFocus();
             }
         });
 

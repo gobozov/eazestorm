@@ -12,6 +12,7 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.tree.IElementType;
+import com.intellij.psi.util.PsiUtilBase;
 import com.intellij.psi.xml.XmlTokenType;
 import com.jetbrains.php.lang.lexer.PhpTokenTypes;
 import com.jetbrains.php.lang.psi.PhpFile;
@@ -19,8 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import ru.eaze.locale.EazeLocaleUtil;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExportLocaleAction extends DumbAwareAction {
+
+    private static Map<String, String> prefixCache = new HashMap<String, String>();
 
     @Override
     public void update(@NotNull AnActionEvent event) {
@@ -112,7 +117,11 @@ public class ExportLocaleAction extends DumbAwareAction {
             text = element.getText();
         }
 
-        ExportLocaleDialog dialog = new ExportLocaleDialog(project, text, new Callback(project, editor, startOffset, endOffset));
+        String keyPrefix = "";
+        if (file.getVirtualFile() != null) {
+            keyPrefix = prefixCache.get(file.getVirtualFile().getPath());
+        }
+        ExportLocaleDialog dialog = new ExportLocaleDialog(project, text, keyPrefix, new Callback(project, editor, startOffset, endOffset));
         dialog.pack();
         dialog.setLocationRelativeTo(null);
         dialog.setVisible(true);
@@ -133,6 +142,12 @@ public class ExportLocaleAction extends DumbAwareAction {
 
         @Override
         public void onOK(Collection<VirtualFile> files, final String key, final String text) {
+            int prefixEnd = key.lastIndexOf(EazeLocaleUtil.LOCALE_KEY_DELIMITER);
+            PsiFile psiFile = PsiUtilBase.getPsiFileInEditor(editor, project);
+            if (psiFile != null && psiFile.getVirtualFile() != null && prefixEnd > 0) {
+                prefixCache.put(psiFile.getVirtualFile().getPath(), key.substring(0, prefixEnd + 1));
+            }
+
             boolean created = false;
             for (final VirtualFile file : files) {
                 created |= CreateLocaleAction.createLocalization(project, file, key, text, false);
