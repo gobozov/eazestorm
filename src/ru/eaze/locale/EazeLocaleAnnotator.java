@@ -8,6 +8,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.impl.source.tree.LeafPsiElement;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.indexing.FileBasedIndex;
+import com.jetbrains.php.lang.psi.elements.StringLiteralExpression;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.locale.action.CreateLocaleAction;
@@ -36,7 +37,7 @@ public class EazeLocaleAnnotator implements Annotator {
      */
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        if (element instanceof LeafPsiElement) {
+        if (element instanceof LeafPsiElement && element.getContext() instanceof StringLiteralExpression) {
             return; //prevents duplicate annotations for php string literals
         }
         EazeLocaleDeclaration declaration = EazeLocaleDeclarationSearcher.findDeclaration(element);
