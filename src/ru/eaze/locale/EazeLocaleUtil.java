@@ -104,6 +104,10 @@ public class EazeLocaleUtil {
         return true;
     }
 
+    public static boolean canCreateKey(Project project, String key) {
+        return canCreateKey(project, getLocaleFiles(project), key);
+    }
+
     @NotNull
     public static String findKeyInString(@NotNull String str) {
         StringBuilder key = new StringBuilder(str.length());
@@ -162,11 +166,23 @@ public class EazeLocaleUtil {
         return null;
     }
 
+    @NotNull
+    public static Collection<XmlTag> findTagsForKey(Project project, String key) {
+        Collection<XmlTag> tags = new ArrayList<XmlTag>();
+        for (VirtualFile file : getLocaleFiles(project)) {
+            XmlTag tag = findTagForKey(project, file, key);
+            if (tag != null) {
+                tags.add(tag);
+            }
+        }
+        return tags;
+    }
+
     public static boolean isValueTag(XmlTag tag) {
         return tag != null
                 && tag.isValid()
                 && tag.getSubTags().length == 0
-                && !tag.getValue().getText().isEmpty();
+                && !tag.getValue().getTrimmedText().isEmpty();
     }
 
     @NotNull

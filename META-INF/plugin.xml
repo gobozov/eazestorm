@@ -48,6 +48,7 @@
         <completion.confidence language="PHP" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.PHP"/>
         <completion.confidence language="HTML" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.HTML"/>
         <findUsagesHandlerFactory implementation="ru.eaze.locale.findUsages.EazeLocaleFindUsagesHandlerFactory"/>
+        <renameHandler implementation="ru.eaze.locale.refactoring.EazeLocaleRenameHandler"/>
     </extensions>
 
     <module-components>

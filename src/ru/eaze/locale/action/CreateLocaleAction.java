@@ -8,7 +8,6 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.InputValidator;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.Iconable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocumentManager;
@@ -181,25 +180,16 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
                     }
                     if (subTag == null || !subTag.isValid()) {
                         subTag = tag.createChildTag(keyPart, tag.getNamespace(), "", false);
-                        tag.addSubTag(subTag, false);
-                        //document commit doesn't save the whole new PsiElement tree so we must commit new child immediately
-                        manager.doPostponedOperationsAndUnblockDocument(document);
-                        manager.commitDocument(document);
-                        subTag = manager.commitAndRunReadAction(new Computable<XmlTag>() {
-                            @Override
-                            public XmlTag compute() {
-                                return EazeLocaleUtil.findTagForKey(project, file, processedKey.toString());
-                            }
-                        });
+                        subTag = tag.addSubTag(subTag, false);
                     }
                     tag = subTag;
                 }
 
                 if (text != null) {
                     tag.getValue().setText(text);
-                    manager.doPostponedOperationsAndUnblockDocument(document);
-                    manager.commitDocument(document);
                 }
+                manager.doPostponedOperationsAndUnblockDocument(document);
+                manager.commitDocument(document);
 
                 result.setResult(true);
             }

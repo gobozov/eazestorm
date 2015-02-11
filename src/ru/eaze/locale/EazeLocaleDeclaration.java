@@ -14,12 +14,13 @@ import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
 import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ru.eaze.locale.refactoring.EazeLocaleRenameUtil;
 
 public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclaredTarget, PsiNamedElement {
 
-    private final PsiElement baseElement;
-    private final TextRange valueRange;
-    private final boolean softDeclaration;
+    private PsiElement baseElement;
+    private TextRange valueRange;
+    private boolean softDeclaration;
 
     protected EazeLocaleDeclaration(@NotNull PsiElement baseElement, @NotNull TextRange valueRange) {
         this(baseElement, valueRange, false);
@@ -182,6 +183,7 @@ public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclared
      *
      * @return the element name.
      */
+    @NotNull
     @Override
     public String getName() {
         return this.getValue();
@@ -197,6 +199,17 @@ public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclared
      */
     @Override
     public PsiElement setName(@NotNull String name) throws IncorrectOperationException {
+        if (getName().equals(name)) {
+            return this;
+        }
+        PsiElement newElement = EazeLocaleRenameUtil.renameElement(baseElement, getName(), name);
+        if (newElement != null) {
+            baseElement = newElement;
+            int start = baseElement.getText().indexOf(name);
+            int end = start + name.length();
+            valueRange = new TextRange(start, end);
+            return this;
+        }
         throw new IncorrectOperationException();
     }
 

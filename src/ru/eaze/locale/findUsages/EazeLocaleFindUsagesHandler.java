@@ -10,6 +10,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.util.PsiUtilCore;
+import com.intellij.psi.xml.XmlTag;
 import com.intellij.usageView.UsageInfo;
 import com.intellij.usageView.UsageInfoFactory;
 import com.intellij.util.Processor;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.EazeLocaleDeclarationSearcher;
+import ru.eaze.locale.EazeLocaleUtil;
 import ru.eaze.locale.reference.EazeLocaleNavigationElement;
 
 import java.util.Collection;
@@ -69,7 +71,7 @@ public class EazeLocaleFindUsagesHandler extends FindUsagesHandler {
                         return null;
                     }
 
-                    return new UsageInfo(usage, startOffset, endOffset, true);
+                    return new UsageInfo(usage, startOffset, endOffset, false);
                 }
             };
 
@@ -127,6 +129,25 @@ public class EazeLocaleFindUsagesHandler extends FindUsagesHandler {
                         return false;
                     }
                 }
+            }
+
+            //when reference has 0 or multiple strict resolutions
+            if (element instanceof EazeLocaleDeclaration) {
+                return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
+                    @Override
+                    public Boolean compute() {
+                        Collection<XmlTag> tags = EazeLocaleUtil.findTagsForKey(project, searchString);
+                        for (XmlTag tag : tags) {
+                            EazeLocaleNavigationElement navigation = new EazeLocaleNavigationElement(target, tag, searchString);
+                            UsageInfo info =  new UsageInfo(navigation, 1, tag.getName().length() + 1, true);
+                            if (!processor.process(info)) {
+                                return false;
+                            }
+
+                        }
+                        return true;
+                    }
+                });
             }
 
             return true;

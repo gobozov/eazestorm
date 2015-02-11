@@ -17,6 +17,10 @@ public class EazeLocaleFindUsagesHandlerFactory extends FindUsagesHandlerFactory
     @Nullable
     @Override
     public FindUsagesHandler createFindUsagesHandler(@NotNull PsiElement element, boolean forHighlightUsages) {
+        return createHandler(element);
+    }
+
+    public  static FindUsagesHandler createHandler(@NotNull PsiElement element) {
         return new EazeLocaleFindUsagesHandler(element);
     }
 }
