@@ -21,7 +21,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     private static final String TRANSLATE_METHOD_NAME = "Translate";
     private static final String T_FUNCTION = "T";
 
-    private static  final Pattern LANG_PATTERN = Pattern.compile("\\{lang:(.+)\\}");
+    private static  final Pattern LANG_PATTERN = Pattern.compile("\\{lang:([^&].*)\\}");
 
     @Override
     public void findDeclarationsAt(@NotNull PsiElement element, int offsetInElement, Consumer<PomTarget> consumer) {
