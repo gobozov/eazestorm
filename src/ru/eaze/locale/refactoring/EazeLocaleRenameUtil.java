@@ -1,22 +1,16 @@
 package ru.eaze.locale.refactoring;
 
-import com.intellij.lang.ASTNode;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.UserDataHolderBase;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.impl.source.codeStyle.CodeEditUtil;
 import com.intellij.psi.impl.source.xml.XmlTokenImpl;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.psi.xml.XmlToken;
-import com.intellij.util.keyFMap.KeyFMap;
 import com.jetbrains.php.lang.psi.PhpPsiElementFactory;
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression;
-import org.apache.velocity.runtime.parser.node.ASTNENode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.eaze.locale.EazeLocaleDeclaration;
-import ru.eaze.locale.EazeLocaleDeclarationSearcher;
 import ru.eaze.locale.EazeLocaleUtil;
 
 public class EazeLocaleRenameUtil {
@@ -49,6 +43,9 @@ public class EazeLocaleRenameUtil {
             //create new tag
             String[] names = EazeLocaleUtil.getKeyParts(newName);
             XmlTag root = ((XmlFile)tag.getContainingFile()).getRootTag();
+            if (root == null) {
+                return null;
+            }
             XmlTag newTag = root;
             for (String name : names) {
                 XmlTag subTag = newTag.findFirstSubTag(name);
@@ -60,7 +57,7 @@ public class EazeLocaleRenameUtil {
             }
             //copy children
             if (tag.getSubTags().length == 0) {
-                newTag.getValue().setText(tag.getValue().getText());
+                newTag.getValue().setEscapedText(tag.getValue().getText());
             } else {
                 for (XmlTag subTag : tag.getSubTags()) {
                     newTag.addSubTag(subTag,false);

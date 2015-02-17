@@ -16,7 +16,6 @@ import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.EazeLocaleDeclarationSearcher;
 import ru.eaze.locale.EazeLocaleKeyIndex;
 import ru.eaze.locale.EazeLocaleUtil;
-import ru.eaze.locale.findUsages.EazeLocaleUsagesIndex;
 
 import java.util.Collection;
 
@@ -36,17 +35,17 @@ public class EazeLocaleCompletionProvider extends CompletionProvider<CompletionP
             Processor<String> processor = new Processor<String>() {
                 @Override
                 public boolean process(String key) {
-                    Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleUsagesIndex.NAME, key, scope);
-                    if (files.size() > 0) {
-                        if (completionType == CompletionType.SMART) {
-                            if (key.startsWith(prefix)) {
-                                int end = key.indexOf(EazeLocaleUtil.LOCALE_KEY_DELIMITER, prefix.length());
-                                if (end >= 0) {
-                                    key = key.substring(0, end);
+                    if (key.contains(prefix)) {
+                        Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyIndex.NAME, key, scope);
+                        if (files.size() > 0) {
+                            if (completionType == CompletionType.SMART) {
+                                if (key.startsWith(prefix)) {
+                                    int end = key.indexOf(EazeLocaleUtil.LOCALE_KEY_DELIMITER, prefix.length());
+                                    if (end >= 0) {
+                                        key = key.substring(0, end);
+                                    }
                                 }
                             }
-                        }
-                        if (key.contains(prefix)) {
                             resultSet.addElement(LookupElementBuilder.create(key));
                         }
                     }
