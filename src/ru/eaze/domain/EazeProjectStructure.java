@@ -1,12 +1,10 @@
 package ru.eaze.domain;
 
-import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.GlobalSearchScopes;
 import com.intellij.psi.search.GlobalSearchScopesCore;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
@@ -16,19 +14,12 @@ import org.jetbrains.annotations.Nullable;
 import ru.eaze.util.RegexpUtils;
 
 import java.net.URL;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
-/**
- * Created by IntelliJ IDEA.
- * User: zenden
- * Date: 01.12.11
- * Time: 23:21
- */
 public class EazeProjectStructure {
-
-    private static final ConcurrentMap<Project,EazeProjectStructure> structures = new ConcurrentHashMap<Project, EazeProjectStructure>();
 
     /**
      * Returns the Eaze project structure for specified IntelliJ project if the given project contains {@code <web>} directory.
@@ -38,45 +29,78 @@ public class EazeProjectStructure {
      * @throws NullPointerException if the specified project is null
      */
     @Nullable
-    public static EazeProjectStructure forProject(Project project) {
-        EazeProjectStructure structure = structures.get(project);
-        if(structure == null) {
-            VirtualFile baseDir = project.getBaseDir();
-            if (baseDir != null) {
-                VirtualFile webDir = baseDir.findFileByRelativePath("web/");
-                if (webDir != null) {
-                    final EazeProjectStructure newStructure = new EazeProjectStructure(project, webDir);
-                    structure = structures.putIfAbsent(project, newStructure);
-                    if(structure == null) {
-                        structure = newStructure;
-                    }
-                }
+    public static EazeProjectStructure forProject(@NotNull Project project) {
+        VirtualFile baseDir = project.getBaseDir();
+        if (baseDir != null) {
+            VirtualFile webDir = baseDir.findFileByRelativePath("web/");    //TODO: get web dir path from settings
+            if (webDir != null) {
+                return new EazeProjectStructure(project, webDir);
             }
         }
-        return structure;
+        return null;
     }
 
-    private Project curProject;
+    private Project project;
     private VirtualFile webDir;
-    //private  = new ArrayList<ru.eaze.domain.EazePage>();
     HashMap<String, String> actions = new HashMap<String, String>();
     HashMap<String, EazePackage> packages = new HashMap<String, EazePackage>();
     HashMap<String, EazeSite> sites = new HashMap<String, EazeSite>();
     EazeSite firstSite = null;
     HashMap<EazeSite.Host, ArrayList<EazePage>> pages = new HashMap<EazeSite.Host, ArrayList<EazePage>>();
     HashMap<String, String> currentChains = new HashMap<String, String>();
-    XmlFile pagesXml;
 
     private EazeProjectStructure(final Project project, VirtualFile projectWebDir) {
-        curProject = project;
+        this.project = project;
         webDir = projectWebDir;
         init();
     }
 
+    @NotNull
     public VirtualFile getWebDir() {
         return webDir;
     }
-    //public Map<String, String> pathMap =  new HashMap<String, String>();
+
+    public boolean isPagesConfigFile(VirtualFile file) {
+        if (file == null || !file.isValid()) {
+            return false;
+        }
+        VirtualFile pagesFile = getPagesFile();
+        return pagesFile != null && pagesFile.isValid() && file.equals(pagesFile);
+    }
+
+    @Nullable
+    private VirtualFile getPagesFile() {
+        return webDir.findFileByRelativePath("etc/conf/pages.xml");
+    }
+
+    @Nullable
+    private XmlFile getPagesXmlFile() {
+        VirtualFile pagesFile = getPagesFile();
+        if (pagesFile != null && pagesFile.isValid()) {
+            PsiFile pagesXml = PsiManager.getInstance(project).findFile(pagesFile);
+            if (pagesXml instanceof XmlFile && pagesXml.isValid()) {
+                return (XmlFile) pagesXml;
+            }
+        }
+        return null;
+    }
+
+    public boolean isActionsConfigFile(VirtualFile file) {
+        if (file == null || !file.isValid()) {
+            return false;
+        }
+        VirtualFile libDir = webDir.findFileByRelativePath("lib/");
+        VirtualFile packageDir = file.getParent();
+        if (libDir != null && libDir.equals(packageDir.getParent())) {
+            PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+            if (psiFile instanceof XmlFile) {
+                XmlFile xmlFile = (XmlFile) psiFile;
+                return xmlFile.getRootTag() != null && xmlFile.getRootTag().getName().equals("actions");
+            }
+            return false;
+        }
+        return false;
+    }
 
     public void analyzeSiteTag(XmlTag siteTag) {
         EazeSite site = new EazeSite(siteTag, sites);
@@ -85,19 +109,6 @@ public class EazeProjectStructure {
         }
 
         sites.put(site.getName(), site);
-        /*XmlTag settingTag = siteTag.findFirstSubTag("settings");
-        if ( settingTag != null) {
-            XmlTag pathsTag = settingTag.findFirstSubTag("paths");
-            if ( pathsTag != null ) {
-                XmlTag[] pathTags = pathsTag.findSubTags("path");
-
-                for ( XmlTag tag : pathTags) {
-                    String pathName  =  tag.getAttribute("name").getValue();
-                    String pathValue = tag.getAttribute("value").getValue();
-                    pathMap.put( pathName + "://", pathValue );
-                }
-            }
-        }    */
     }
 
     EazeSite.Host detectHost(String urlStr) {
@@ -141,38 +152,12 @@ public class EazeProjectStructure {
         }
     }
 
-    /**
-     * @param actionTag xml tag action in actions.xml
-     * @return
-     */
-    public static VirtualFile GetFileByActionTag(XmlTag actionTag) {
-        PsiFile containingFile = actionTag.getContainingFile();
-        VirtualFile virtualFile = containingFile.getVirtualFile();
-        if (virtualFile == null){
-            return null;
-        }
-        String packageName = actionTag.getContainingFile().getName();
-        packageName = packageName.replace(".xml", "");
-        String actionName = actionTag.getAttribute("name").getValue().toString();
-        String path = "";
-        XmlTag pathTag = actionTag.findFirstSubTag("path");
-        if (pathTag != null) {
-            path = pathTag.getValue().getText();
-        }
-        if (path == "") {
-            path = actionName;
-        }
-        path += ".php";
-        path = "/actions/" + path;
-        VirtualFile parentFile =  virtualFile.getParent();
-        if ( parentFile == null ){
-            return null;
-        }
-        return parentFile.findFileByRelativePath(path);
-    }
-
     public void loadPagesForHost(EazeSite.Host host) {
         currentChains.clear();
+        XmlFile pagesXml = getPagesXmlFile();
+        if (pagesXml == null) {
+            return;
+        }
         XmlTag sitesTag = pagesXml.getRootTag();
         //String siteNames = "";
         XmlTag detectedSiteTag = null;
@@ -278,17 +263,11 @@ public class EazeProjectStructure {
 
 
     public void init() {
-        VirtualFile pagesXmlFile = webDir.findFileByRelativePath("etc/conf/pages.xml");
         VirtualFile sitesXml = webDir.findFileByRelativePath("etc/conf/sites.xml");
-        readSitesXml(curProject, sitesXml);
-        PsiFile pagesXmlPsiFile = PsiManager.getInstance(curProject).findFile(pagesXmlFile);
-        if (pagesXmlPsiFile != null) {
-            XmlFile file = (XmlFile) pagesXmlPsiFile;
-            pagesXml = file;
-        }
+        readSitesXml(project, sitesXml);
     }
 
-    public boolean LooksLikeEazeUri(String uri) {
+    public boolean isValidEazeUri(String uri) {
         List<String> rez = new ArrayList<String>();
         RegexpUtils.preg_match("/([a-z]+:\\/\\/).+/", uri, rez);
         if (rez.size() != 0) {
@@ -304,7 +283,7 @@ public class EazeProjectStructure {
         if (pagesXmlFile == null) {
             return;
         }
-        EazePackage newPackage = new EazePackage(packageName, curProject, pagesXmlFile, webDir);
+        EazePackage newPackage = new EazePackage(packageName, project, pagesXmlFile, webDir);
         packages.put(packageName, newPackage);
     }
 
@@ -443,7 +422,7 @@ public class EazeProjectStructure {
                                     MyListElement el = new MyListElement(templateName, file, "tmpl", "");
                                     elements.add(el);
 
-                                    PsiFile psiTemplate = PsiManager.getInstance(curProject).findFile(file);
+                                    PsiFile psiTemplate = PsiManager.getInstance(project).findFile(file);
                                     String text = psiTemplate.getText();
                                     List<List<String>> rez = new ArrayList<List<String>>();
                                     RegexpUtils.preg_match_all("/\\{increal:(.+?)\\}/", text, rez);
@@ -506,6 +485,6 @@ public class EazeProjectStructure {
 
     @NotNull
     public GlobalSearchScope projectScope() {
-        return GlobalSearchScopesCore.directoryScope(curProject, webDir, true);
+        return GlobalSearchScopesCore.directoryScope(project, webDir, true);
     }
 }

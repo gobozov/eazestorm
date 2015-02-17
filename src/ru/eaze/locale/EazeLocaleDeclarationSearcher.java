@@ -77,7 +77,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     }
 
     private static EazeLocaleDeclaration findDeclaration(XmlToken element) {
-        if (element.getTokenType() == XmlTokenType.XML_ATTRIBUTE_VALUE_TOKEN || element.getTokenType() == XmlTokenType.XML_DATA_CHARACTERS) {
+        if (element.getTokenType() == XmlTokenType.XML_DATA_CHARACTERS) {
             Matcher matcher = LANG_PATTERN.matcher(element.getText());
             if (matcher.matches() && matcher.groupCount() > 0) {
                 TextRange range = new TextRange(matcher.start(1), matcher.end(1));

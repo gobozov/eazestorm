@@ -1,60 +1,55 @@
 package ru.eaze.reference;
 
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.PsiReferenceBase;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.domain.EazeSite;
 
-/**
- * Created by IntelliJ IDEA.
- * User: user
- * Date: 26.01.12
- * Time: 23:07
- * Путь
- */
-public class EazeUriReference extends MyXmlTagReference {
-    String path;
+public class EazeUriReference extends PsiReferenceBase<PsiElement> {
 
-    public EazeUriReference(String path, PsiElement element, TextRange textRange, EazeProjectStructure structure, Project project) {
-        super(element, textRange, structure, project);
-        this.path = path;
+    public EazeUriReference(@NotNull PsiElement element, @NotNull TextRange textRange) {
+        super(element, textRange);
     }
 
     @Nullable
     public PsiElement resolve() {
-        if (structure == null || path == null) {
+        EazeProjectStructure structure = EazeProjectStructure.forProject(this.getElement().getProject());
+        if (structure == null) {
             return null;
         }
 
-        String uri = path;
-        final EazeSite.Host firstHost = structure.getFirstHost();
+        final EazeSite.Host firstHost = structure.getFirstHost();   //TODO: do we really need the first host?
         final VirtualFile webDir = structure.getWebDir();
-        if (firstHost == null || webDir == null) {
+        if (firstHost == null) {
             return null;
         }
 
-        String str = ((EazeSite.Host) firstHost).translateEazePath(uri);
+        String str = firstHost.translateEazePath(getValue());
         if (str == null) {
             return null;
-        } else {
-            System.out.println("translatedPath=" + str);
         }
 
         VirtualFile targetFile = webDir.findFileByRelativePath(str);
         if (targetFile != null) {
-            return PsiManager.getInstance(project).findFile(targetFile);
+            return PsiManager.getInstance(this.getElement().getProject()).findFile(targetFile);
         }
 
         return null;
     }
 
+    @NotNull
     @Override
-    public String getCanonicalText() {
-        return path;
+    public Object[] getVariants() {
+        return new Object[0];
     }
 
+    @Override
+    public String toString() {
+        return this.getCanonicalText();
+    }
 }

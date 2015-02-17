@@ -5,7 +5,6 @@ import com.intellij.find.findUsages.FindUsagesOptions;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiNamedElement;
 import com.intellij.refactoring.BaseRefactoringProcessor;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.refactoring.rename.RenameUtil;
 import com.intellij.usageView.UsageInfo;
 import com.intellij.usageView.UsageViewDescriptor;
@@ -42,7 +41,7 @@ public class EazeLocaleRenameProcessor extends BaseRefactoringProcessor {
             @NotNull
             @Override
             public PsiElement[] getElements() {
-                return new PsiElement[]{ declaration }; // TODO: add implementation
+                return new PsiElement[]{ declaration };
             }
 
             @Override

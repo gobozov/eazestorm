@@ -1,11 +1,4 @@
-package ru.eaze; /**
- * Created by IntelliJ IDEA.
- * User: zenden
- * Date: 01.12.11
- * Time: 11:36
- * To change this template use File | Settings | File Templates.
- */
-
+package ru.eaze;
 
 import com.intellij.ide.IdeBundle;
 import com.intellij.ide.util.PropertiesComponent;
@@ -26,18 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MyGotoFileModel implements MyModel {
-    private final int myMaxSize;
 
-    EazeProjectStructure eazeProjectStructure = null;
-    List<String> cachedFileList = new ArrayList<String>();
-    String cachedPattern = null;
-    Project myProject = null;
+    private List<String> cachedFileList = new ArrayList<String>();
+    private final Project project;
 
-
-    public MyGotoFileModel(Project project, VirtualFile webDir) {
-        myProject = project;
-        eazeProjectStructure = EazeProjectStructure.forProject(project);
-        myMaxSize = WindowManagerEx.getInstanceEx().getFrame(project).getSize().width;
+    public MyGotoFileModel(Project project) {
+        this.project = project;
     }
 
     protected boolean acceptItem(final NavigationItem item) {
@@ -45,7 +32,6 @@ public class MyGotoFileModel implements MyModel {
     }
 
     @Nullable
-    //@Override
     protected FileType filterValueFor(NavigationItem item) {
         return item instanceof PsiFile ? ((PsiFile) item).getFileType() : null;
     }
@@ -71,18 +57,17 @@ public class MyGotoFileModel implements MyModel {
     }
 
     public boolean loadInitialCheckBoxState() {
-        PropertiesComponent propertiesComponent = PropertiesComponent.getInstance(myProject);
+        PropertiesComponent propertiesComponent = PropertiesComponent.getInstance(project);
         return propertiesComponent.isTrueValue("GoToClass.includeJavaFiles");
     }
 
     public void saveInitialCheckBoxState(boolean state) {
-        PropertiesComponent propertiesComponent = PropertiesComponent.getInstance(myProject);
+        PropertiesComponent propertiesComponent = PropertiesComponent.getInstance(project);
         propertiesComponent.setValue("GoToClass.includeJavaFiles", Boolean.toString(state));
     }
 
     public PsiElementListCellRenderer getListCellRenderer() {
-        //return new DefaultPsiElementCellRenderer();
-        return new GotoFileCellRenderer(myMaxSize);
+        return new GotoFileCellRenderer(WindowManagerEx.getInstanceEx().getFrame(project).getSize().width);
     }
 
     @Nullable
@@ -109,7 +94,7 @@ public class MyGotoFileModel implements MyModel {
     }
 
     public Object[] getElementsByName(String name, boolean checkBoxState, String pattern) {
-        return new Object[0];  //To change body of implemented methods use File | Settings | File Templates.
+        return new Object[0];
     }
 
     public String getElementName(Object element) {
@@ -121,7 +106,7 @@ public class MyGotoFileModel implements MyModel {
     }
 
     public Object[] getElementsByPattern(String userPattern) {
-        Object[] res = eazeProjectStructure.getFileNamesForURL(userPattern, cachedFileList);
+        Object[] res = EazeProjectStructure.forProject(project).getFileNamesForURL(userPattern, cachedFileList);
         return res;
 
     }

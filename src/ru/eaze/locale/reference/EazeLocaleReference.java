@@ -1,7 +1,6 @@
 package ru.eaze.locale.reference;
 
 import com.intellij.openapi.util.TextRange;
-import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementResolveResult;
 import com.intellij.psi.PsiPolyVariantReferenceBase;
 import com.intellij.psi.ResolveResult;
@@ -12,13 +11,10 @@ import ru.eaze.locale.EazeLocaleKeyIndex;
 
 import java.util.Collection;
 
-public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement> {
-
-    private final EazeLocaleDeclaration declaration;
+public class EazeLocaleReference extends PsiPolyVariantReferenceBase<EazeLocaleDeclaration> {
 
     public EazeLocaleReference(@NotNull EazeLocaleDeclaration declaration, @NotNull TextRange range) {
         super(declaration, range);
-        this.declaration = declaration;
     }
 
     /**
@@ -36,7 +32,7 @@ public class EazeLocaleReference extends PsiPolyVariantReferenceBase<PsiElement>
         ResolveResult[] results = new ResolveResult[declarations.size()];
         int i = 0;
         for (XmlTag tag : declarations) {
-            results[i++] = new PsiElementResolveResult(new EazeLocaleNavigationElement(declaration, tag, declaration.getValue()));
+            results[i++] = new PsiElementResolveResult(new EazeLocaleNavigationElement(this.getElement(), tag, this.getElement().getValue()));
         }
         return results;
     }

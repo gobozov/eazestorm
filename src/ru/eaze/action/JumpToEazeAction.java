@@ -53,7 +53,7 @@ public class JumpToEazeAction extends AnAction implements DumbAware, MyModel.Cal
             Messages.showErrorDialog("Could not find 'web' directory! it should be in root folder of your project! Check web dir in settings.", "EazeStorm");
             return;
         }
-        showNavigationPopup(e, new MyGotoFileModel(project, webDir), this, "bred");
+        showNavigationPopup(e, new MyGotoFileModel(project), this);
     }
 
     protected <T> void showNavigationPopup(AnActionEvent e, MyModel model, MyModel.Callback callback/*, final GotoActionCallback<T> callback*/) {
