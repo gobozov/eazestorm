@@ -2,22 +2,21 @@ package ru.eaze.domain;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.GlobalSearchScopesCore;
+import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
-import org.apache.commons.lang.StringUtils;
+import com.intellij.util.indexing.FileBasedIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.util.RegexpUtils;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class EazeProjectStructure {
 
@@ -42,8 +41,7 @@ public class EazeProjectStructure {
 
     private Project project;
     private VirtualFile webDir;
-    HashMap<String, String> actions = new HashMap<String, String>();
-    HashMap<String, EazePackage> packages = new HashMap<String, EazePackage>();
+
     HashMap<String, EazeSite> sites = new HashMap<String, EazeSite>();
     EazeSite firstSite = null;
     HashMap<EazeSite.Host, ArrayList<EazePage>> pages = new HashMap<EazeSite.Host, ArrayList<EazePage>>();
@@ -91,7 +89,7 @@ public class EazeProjectStructure {
         }
         VirtualFile libDir = webDir.findFileByRelativePath("lib/");
         VirtualFile packageDir = file.getParent();
-        if (libDir != null && libDir.equals(packageDir.getParent())) {
+        if (libDir != null && packageDir != null && libDir.equals(packageDir.getParent())) {
             PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
             if (psiFile instanceof XmlFile) {
                 XmlFile xmlFile = (XmlFile) psiFile;
@@ -278,47 +276,59 @@ public class EazeProjectStructure {
         return false;
     }
 
-    void loadPackage(String packageName) {
-        VirtualFile pagesXmlFile = webDir.findFileByRelativePath("lib/" + packageName + "/" + packageName + ".xml");
-        if (pagesXmlFile == null) {
-            return;
+    @Nullable
+    public EazeAction getActionByFullName(@NotNull String name) {
+        Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeActionsIndex.NAME, name, projectScope());
+        VirtualFile file = null;
+        for (VirtualFile f : files) {
+            file = f;
+            break;
         }
-        EazePackage newPackage = new EazePackage(packageName, project, pagesXmlFile, webDir);
-        packages.put(packageName, newPackage);
+        if (file != null) {
+            List<Integer> offsets = FileBasedIndex.getInstance().getValues(EazeActionsIndex.NAME, name, GlobalSearchScope.fileScope(project, file));
+            if (!offsets.isEmpty()) {
+                int offset = offsets.get(0);
+                PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+                if (psiFile != null) {
+                    PsiElement element = psiFile.findElementAt(offset);
+                    XmlTag actionTag = element instanceof XmlTag ? (XmlTag) element : (element.getParent() instanceof XmlTag ? (XmlTag) element.getParent() : null);
+                    if (actionTag != null) {
+                        VirtualFile actionFile = getFileByActionTag(actionTag);
+                        return new EazeAction(name, actionTag, actionFile);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
-   public EazePackage getPackageByName(String packageName) {
-        if (packages.containsKey(packageName)) {
-            return packages.get(packageName);
-        }
-        loadPackage(packageName);
-        return packages.get(packageName);
-    }
-
-    public EazeAction getActionByFullName(String name) {
-        name = name.trim();
-        String[] tokens = trimStringArray(name.split("\\."));
-        if (tokens.length < 3) {
+    @Nullable
+    public static VirtualFile getFileByActionTag(@NotNull XmlTag actionTag) {
+        if (!actionTag.isValid()) {
             return null;
         }
-        // String.
-        String packageName = StringUtils.join(Arrays.copyOfRange(tokens, 0, tokens.length - 1), '.');
 
-        // tokens[0] + "." + tokens[1];
-        EazePackage eazePackage = getPackageByName(packageName);
-        if (eazePackage == null) {
+        VirtualFile packageDir = actionTag.getContainingFile().getVirtualFile().getParent();
+        VirtualFile actionsDir = packageDir.findFileByRelativePath("actions/");
+        if (actionsDir == null) {
             return null;
         }
-        return eazePackage.getActionByName(tokens[2]);
-    }
 
-    String extractPackageName(String actionName) {
-        actionName = actionName.trim();
-        String[] tokens = actionName.split("\\.");
-        if (tokens.length < 3) {
+        XmlAttribute actionNameAttr = actionTag.getAttribute("name");
+        String actionName = actionNameAttr != null ? actionNameAttr.getValue() : "";
+        XmlTag pathTag = actionTag.findFirstSubTag("path");
+        String path = "";
+        if (pathTag != null) {
+            path = pathTag.getValue().getTrimmedText();
+        }
+        if (path.isEmpty()) {
+            path = actionName != null ? actionName : "";
+        }
+        if (path.isEmpty()) {
             return null;
         }
-        return StringUtils.join(Arrays.copyOfRange(tokens, 0, tokens.length - 1), '.');
+        path += ".php";
+        return actionsDir.findFileByRelativePath(path);
     }
 
     public  static String[] trimStringArray(String[] input) {
@@ -333,20 +343,6 @@ public class EazeProjectStructure {
             return null;
         }
         return firstSite.getFirstHost();
-    }
-
-    public String[] getAvailablePackageNames() {
-        ArrayList<String> packageNames = new ArrayList<String>();
-        VirtualFile libDir = webDir.findFileByRelativePath("lib/");
-        if (libDir != null) {
-            VirtualFile[] files = libDir.getChildren();
-            for (VirtualFile file : files) {
-                if (file.isDirectory()) {
-                    packageNames.add(file.getName());
-                }
-            }
-        }
-        return packageNames.toArray(new String[packageNames.size()]);
     }
 
     public Object[] getFileNamesForURL(String urlStr, List<String> fileNames) {

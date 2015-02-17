@@ -32,8 +32,11 @@
     </actions>
 
     <extensions defaultExtensionNs="com.intellij">
-        <psi.referenceContributor implementation="ru.eaze.reference.EazeReferenceContributor"/>
         <projectConfigurable instance="ru.eaze.settings.EazeSettingsPanel"/>
+
+        <!-- Eaze Actions and URIs -->
+        <fileBasedIndex implementation="ru.eaze.domain.EazeActionsIndex" />
+        <psi.referenceContributor implementation="ru.eaze.reference.EazeReferenceContributor"/>
 
         <!-- Eaze Localization -->
         <fileBasedIndex implementation="ru.eaze.locale.EazeLocaleKeyIndex"/>

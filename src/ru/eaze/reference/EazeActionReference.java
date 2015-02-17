@@ -3,12 +3,9 @@ package ru.eaze.reference;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReferenceBase;
-import com.intellij.psi.xml.XmlAttribute;
-import com.intellij.psi.xml.XmlTag;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeAction;
-import ru.eaze.domain.EazePackage;
 import ru.eaze.domain.EazeProjectStructure;
 
 /**
@@ -29,18 +26,10 @@ public class EazeActionReference extends PsiReferenceBase<PsiElement> {
         if (structure == null) {
             return null;
         }
-
         EazeAction action = structure.getActionByFullName(actionName);
         if (action != null) {
-            XmlTag actionTag = action.getXmlTag();
-            XmlAttribute attr = actionTag.getAttribute("name");
-            if (attr != null) {
-                return attr.getValueElement();
-            }
-            return actionTag;
-
+            return action.getNavigationElement();
         }
-
         return null;
     }
 
@@ -52,21 +41,7 @@ public class EazeActionReference extends PsiReferenceBase<PsiElement> {
     @NotNull
     @Override
     public Object[] getVariants() {
-        EazeProjectStructure structure = EazeProjectStructure.forProject(this.getElement().getProject());
-        if (structure == null) {
-            return new Object[0];
-        }
-
-        String[] tokens = actionName.split("\\.");
-        if (tokens.length > 1) {
-            String packageName = tokens[0] + "." + tokens[1];
-            EazePackage pack = structure.getPackageByName(packageName);
-            if (pack != null) {
-                return pack.getAvailableActionNames();
-            }
-
-        }
-        return structure.getAvailablePackageNames();
+        return new Object[0];
     }
 
     @Override
