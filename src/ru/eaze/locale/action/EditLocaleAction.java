@@ -25,8 +25,6 @@ public class EditLocaleAction extends BaseIntentionAction implements Iconable {
 
     private static final String ERROR_TITLE = "Edit Localization Error";
     private static final String INVALID_KEY = "Invalid localization key";
-    private static final String NOT_XML_FILE = "Not an XML file";
-    private static final String NOT_FOUND_FILE = "Document not found";
     private static final String INVALID_FILE = "Not a localization file";
     private static final String INVALID_TAG = "Tag not found in the file. Synchronize you project and retry.";
 
@@ -100,30 +98,29 @@ public class EditLocaleAction extends BaseIntentionAction implements Iconable {
             Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
             return;
         }
+        if (EazeLocaleUtil.isLocaleFile(localeFile, project)) {
+            Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+            return;
+        }
+
+        final PsiFile psiFile = PsiManager.getInstance(project).findFile(localeFile);
+        if (psiFile == null) {
+            Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+            return;
+        }
+        final PsiDocumentManager manager = PsiDocumentManager.getInstance(psiFile.getProject());
+        final Document document = manager.getDocument(psiFile);
+        if (document == null) {
+            Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+            return;
+        }
+        manager.doPostponedOperationsAndUnblockDocument(document);
 
         ApplicationManager.getApplication().runWriteAction(new Runnable() {
             @Override
             public void run() {
-                if (localeFile == null || !localeFile.isValid()) {
-                    Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
-                    return;
-                }
-
-                PsiFile psiFile = PsiManager.getInstance(project).findFile(localeFile);
-                if (!(psiFile instanceof XmlFile)) {
-                    Messages.showErrorDialog(project, NOT_XML_FILE, ERROR_TITLE);
-                    return;
-                }
-                PsiDocumentManager manager = PsiDocumentManager.getInstance(psiFile.getProject());
-                Document document = manager.getDocument(psiFile);
-                if (document == null) {
-                    Messages.showErrorDialog(project, NOT_FOUND_FILE, ERROR_TITLE);
-                    return;
-                }
-                manager.commitDocument(document);
-
                 XmlTag root = ((XmlFile) psiFile).getRootTag();
-                if (root == null || !root.isValid() || !root.getName().equals(EazeLocaleUtil.LOCAL_FILE_ROOT_TAG_NAME)) {
+                if (root == null) {
                     Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
                     return;
                 }

@@ -67,7 +67,7 @@ public class EazeLocaleKeyIndex extends ScalarIndexExtension<String> {
         public Map<String, Void> map(@NotNull FileContent inputData) {
             if(EazeLocaleUtil.isLocaleFile(inputData.getFile(), inputData.getProject())) {
                 XmlTag root = ((XmlFile)inputData.getPsiFile()).getRootTag();
-                if (root != null && root.isValid() && root.getName().equals(EazeLocaleUtil.LOCAL_FILE_ROOT_TAG_NAME)) {
+                if (root != null) {
                     Map<String, Void> result = new HashMap<String, Void>();
                     for (XmlTag subTag : root.getSubTags()) {
                         if (subTag.isValid()) {

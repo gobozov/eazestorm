@@ -27,7 +27,7 @@ public class EazeLocaleUtil {
     private EazeLocaleUtil() { }
 
     @NonNls
-    public static final String LOCAL_FILE_ROOT_TAG_NAME = "language";
+    private static final String LOCAL_FILE_ROOT_TAG_NAME = "language";
     @NonNls
     public static final String LOCALE_KEY_DELIMITER = ".";
 

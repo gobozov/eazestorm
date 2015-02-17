@@ -26,9 +26,7 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
 
     private static final String ERROR_TITLE = "Create Localization Error";
     private static final String INVALID_KEY = "Invalid localization key";
-    private static final String NOT_XML_FILE = "Not an XML file";
-    private static final String NOT_FOUND_FILE = "Document not found";
-    private static final String INVALID_FILE = "Not a localization file. File was deleted or has invalid root tag.";
+    private static final String INVALID_FILE = "Not a localization file. File was deleted or has invalid structure.";
 
     private final VirtualFile localeFile;
     private final String localeKey;
@@ -132,20 +130,20 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
             if (!silentMode) Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
             return false;
         }
-        if (file == null || !file.isValid()) {
-            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO file creation
+        if (EazeLocaleUtil.isLocaleFile(file, project)) {
+            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
             return false;
         }
 
         final PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
-        if (!(psiFile instanceof XmlFile)) {
-            if (!silentMode) Messages.showErrorDialog(project, NOT_XML_FILE, ERROR_TITLE);
+        if (psiFile == null) {
+            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
             return false;
         }
         final PsiDocumentManager manager = PsiDocumentManager.getInstance(psiFile.getProject());
         final Document document = manager.getDocument(psiFile);
         if (document == null) {
-            if (!silentMode) Messages.showErrorDialog(project, NOT_FOUND_FILE, ERROR_TITLE);
+            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
             return false;
         }
         manager.doPostponedOperationsAndUnblockDocument(document);
@@ -156,12 +154,11 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
                 manager.commitDocument(document);
 
                 XmlTag root = ((XmlFile)psiFile).getRootTag();
-                if (root == null || !root.isValid() || !root.getName().equals(EazeLocaleUtil.LOCAL_FILE_ROOT_TAG_NAME)) {
-                    if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE); //TODO root creation
+                if (root == null) {
+                    if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
                     result.setResult(false);
                     return;
                 }
-
                 String[] keyParts = EazeLocaleUtil.getKeyParts(key);
                 XmlTag tag = root;
                 final StringBuilder processedKey = new StringBuilder();
