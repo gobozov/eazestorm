@@ -87,8 +87,10 @@ public class EazeProjectStructure {
             return false;
         }
         VirtualFile libDir = webDir.findFileByRelativePath("lib/");
+        VirtualFile libEazeDir = webDir.findFileByRelativePath("lib.eaze/");
         VirtualFile packageDir = file.getParent();
-        if (libDir != null && packageDir != null && libDir.equals(packageDir.getParent())) {
+        if (packageDir != null && ((libDir != null && libDir.equals(packageDir.getParent()))
+                                    || (libEazeDir != null && libEazeDir.equals(packageDir.getParent())))) {
             PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
             if (psiFile instanceof XmlFile) {
                 XmlFile xmlFile = (XmlFile) psiFile;
