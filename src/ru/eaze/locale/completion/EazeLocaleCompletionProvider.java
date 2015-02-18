@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.EazeLocaleDeclarationSearcher;
-import ru.eaze.locale.EazeLocaleKeyIndex;
+import ru.eaze.indexes.EazeLocaleKeyIndex;
 import ru.eaze.locale.EazeLocaleUtil;
 
 import java.util.Collection;

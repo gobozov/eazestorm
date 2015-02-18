@@ -1,4 +1,4 @@
-package ru.eaze.domain;
+package ru.eaze.indexes;
 
 import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.psi.xml.XmlFile;
@@ -7,6 +7,7 @@ import com.intellij.util.indexing.*;
 import com.intellij.util.io.*;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
+import ru.eaze.domain.EazeProjectStructure;
 
 import java.io.DataInput;
 import java.io.DataOutput;

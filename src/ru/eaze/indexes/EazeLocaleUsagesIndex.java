@@ -1,4 +1,4 @@
-package ru.eaze.locale.findUsages;
+package ru.eaze.indexes;
 
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;

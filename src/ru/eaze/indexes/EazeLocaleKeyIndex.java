@@ -1,4 +1,4 @@
-package ru.eaze.locale;
+package ru.eaze.indexes;
 
 import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.openapi.application.ApplicationManager;
@@ -15,6 +15,7 @@ import com.intellij.util.io.KeyDescriptor;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
+import ru.eaze.locale.EazeLocaleUtil;
 
 import java.util.*;
 

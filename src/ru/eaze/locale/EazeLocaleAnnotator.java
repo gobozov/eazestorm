@@ -11,6 +11,7 @@ import com.intellij.util.indexing.FileBasedIndex;
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
+import ru.eaze.indexes.EazeLocaleKeyIndex;
 import ru.eaze.locale.action.CreateLocaleAction;
 import ru.eaze.locale.action.EditLocaleAction;
 

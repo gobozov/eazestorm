@@ -32,7 +32,6 @@ import java.util.Map;
 public class JumpToEazeAction extends AnAction implements DumbAware, MyModel.Callback {
 
     private Project project;
-    private Settings settings;
     protected static Class myInAction = null;
     private static Map<Class, Pair<String, Integer>> ourLastStrings = new HashMap<Class, Pair<String, Integer>>();
 

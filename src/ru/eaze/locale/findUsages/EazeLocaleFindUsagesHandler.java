@@ -17,6 +17,7 @@ import com.intellij.util.Processor;
 import com.intellij.util.indexing.FileBasedIndex;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.domain.EazeProjectStructure;
+import ru.eaze.indexes.EazeLocaleUsagesIndex;
 import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.EazeLocaleDeclarationSearcher;
 import ru.eaze.locale.EazeLocaleUtil;

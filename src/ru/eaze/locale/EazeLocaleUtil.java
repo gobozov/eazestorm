@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeProjectStructure;
+import ru.eaze.indexes.EazeLocaleKeyIndex;
 
 import java.util.ArrayList;
 import java.util.Collection;

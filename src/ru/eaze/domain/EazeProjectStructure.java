@@ -14,6 +14,9 @@ import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.indexing.FileBasedIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ru.eaze.indexes.EazeActionsIndex;
+import ru.eaze.indexes.EazePathIndex;
+import ru.eaze.settings.Settings;
 import ru.eaze.util.RegexpUtils;
 
 import java.net.URL;
@@ -36,7 +39,8 @@ public class EazeProjectStructure {
     public static EazeProjectStructure forProject(@NotNull Project project) {
         VirtualFile baseDir = project.getBaseDir();
         if (baseDir != null) {
-            VirtualFile webDir = baseDir.findFileByRelativePath("web/");    //TODO: get web dir path from settings
+            String webDirPath = Settings.forProject(project).getWebDir();
+            VirtualFile webDir = baseDir.findFileByRelativePath(webDirPath);
             if (webDir != null) {
                 return new EazeProjectStructure(project, webDir);
             }

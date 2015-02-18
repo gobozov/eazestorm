@@ -7,7 +7,7 @@ import com.intellij.psi.ResolveResult;
 import com.intellij.psi.xml.XmlTag;
 import org.jetbrains.annotations.NotNull;
 import ru.eaze.locale.EazeLocaleDeclaration;
-import ru.eaze.locale.EazeLocaleKeyIndex;
+import ru.eaze.indexes.EazeLocaleKeyIndex;
 
 import java.util.Collection;
 

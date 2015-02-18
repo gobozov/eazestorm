@@ -1,4 +1,4 @@
-package ru.eaze.domain;
+package ru.eaze.indexes;
 
 import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.psi.xml.XmlAttribute;
@@ -11,6 +11,7 @@ import com.intellij.util.io.EnumeratorStringDescriptor;
 import com.intellij.util.io.KeyDescriptor;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
+import ru.eaze.domain.EazeProjectStructure;
 
 import java.io.DataInput;
 import java.io.DataOutput;
