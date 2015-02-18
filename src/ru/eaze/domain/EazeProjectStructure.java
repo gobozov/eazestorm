@@ -20,6 +20,7 @@ import ru.eaze.settings.Settings;
 import ru.eaze.util.RegexpUtils;
 
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -419,8 +420,13 @@ public class EazeProjectStructure {
         }
 
         public Object[] getFileNamesForURL(String urlStr) {
+            if (urlStr == null || urlStr.isEmpty()) {
+                return new Object[0];
+            }
+
             ArrayList<MyListElement> elements = new ArrayList<MyListElement>();
             try {
+                urlStr = URLDecoder.decode(urlStr, "utf-8");
                 URL url = null;
                 try {
                     url = new URL(urlStr);
