@@ -11,6 +11,7 @@ import com.intellij.psi.search.GlobalSearchScopesCore;
 import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
+import com.intellij.util.Processor;
 import com.intellij.util.indexing.FileBasedIndex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -152,6 +153,22 @@ public class EazeProjectStructure {
         }
         path += ".php";
         return actionsDir.findFileByRelativePath(path);
+    }
+
+    public Collection<String>  getAvailableActionNames() {
+        final Collection<String> names = new ArrayList<String>();
+        Processor<String> processor = new Processor<String>() {
+            @Override
+            public boolean process(String key) {
+            Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeActionsIndex.NAME, key, projectScope());
+            if (files.size() > 0) {
+                names.add(key);
+            }
+            return true;
+            }
+        };
+        FileBasedIndex.getInstance().processAllKeys(EazeActionsIndex.NAME, processor, project);
+        return names;
     }
 
     public boolean isSitesConfigFile(VirtualFile file) {
