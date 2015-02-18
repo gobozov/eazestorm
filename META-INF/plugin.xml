@@ -7,17 +7,6 @@
     <vendor url="http://www.1adw.ru/" email="gobozov@gmail.com">1ADW</vendor>
     <idea-version since-build="139.0"/>
 
-    <application-components>
-        <!-- Add your application components here -->
-    </application-components>
-
-    <project-components>
-        <component>
-            <implementation-class>ru.eaze.component.EazeStormProjectComponent</implementation-class>
-        </component>
-
-    </project-components>
-
     <depends>com.intellij.modules.platform</depends>
     <depends>com.jetbrains.php</depends>
 
@@ -36,6 +25,7 @@
 
         <!-- Eaze Actions and URIs -->
         <fileBasedIndex implementation="ru.eaze.domain.EazeActionsIndex" />
+        <fileBasedIndex implementation="ru.eaze.domain.EazePathIndex" />
         <psi.referenceContributor implementation="ru.eaze.reference.EazeReferenceContributor"/>
 
         <!-- Eaze Localization -->
@@ -53,10 +43,4 @@
         <findUsagesHandlerFactory implementation="ru.eaze.locale.findUsages.EazeLocaleFindUsagesHandlerFactory"/>
         <renameHandler implementation="ru.eaze.locale.refactoring.EazeLocaleRenameHandler"/>
     </extensions>
-
-    <module-components>
-        <component>
-            <implementation-class>ru.eaze.component.EazeStormModuleComponent</implementation-class>
-        </component>
-    </module-components>
 </idea-plugin>

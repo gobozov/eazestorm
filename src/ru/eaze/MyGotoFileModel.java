@@ -22,9 +22,11 @@ public class MyGotoFileModel implements MyModel {
 
     private List<String> cachedFileList = new ArrayList<String>();
     private final Project project;
+    private final EazeProjectStructure structure;
 
-    public MyGotoFileModel(Project project) {
+    public MyGotoFileModel(@NotNull Project project, @NotNull EazeProjectStructure structure) {
         this.project = project;
+        this.structure = structure;
     }
 
     protected boolean acceptItem(final NavigationItem item) {
@@ -106,7 +108,7 @@ public class MyGotoFileModel implements MyModel {
     }
 
     public Object[] getElementsByPattern(String userPattern) {
-        Object[] res = EazeProjectStructure.forProject(project).getFileNamesForURL(userPattern, cachedFileList);
+        Object[] res = structure.getFileNamesForURL(userPattern);
         return res;
 
     }

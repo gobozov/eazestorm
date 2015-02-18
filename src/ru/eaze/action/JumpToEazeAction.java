@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import ru.eaze.MyGotoFileModel;
+import ru.eaze.domain.EazeProjectStructure;
 import ru.eaze.settings.Settings;
 import ru.eaze.domain.MyListElement;
 import ru.eaze.MyModel;
@@ -44,16 +45,12 @@ public class JumpToEazeAction extends AnAction implements DumbAware, MyModel.Cal
         project = e.getData(PlatformDataKeys.PROJECT);
         final Component component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT);
 
-        settings = new Settings(project);
-
-        VirtualFile baseDir = project.getBaseDir();
-        VirtualFile webDir = baseDir.findFileByRelativePath(settings.getStringValue(Settings.KEY_WEB_DIR, "web"));
-
-        if (webDir == null) {
+        EazeProjectStructure structure = EazeProjectStructure.forProject(project);
+        if (structure == null) {
             Messages.showErrorDialog("Could not find 'web' directory! it should be in root folder of your project! Check web dir in settings.", "EazeStorm");
             return;
         }
-        showNavigationPopup(e, new MyGotoFileModel(project), this);
+        showNavigationPopup(e, new MyGotoFileModel(project, structure), this);
     }
 
     protected <T> void showNavigationPopup(AnActionEvent e, MyModel model, MyModel.Callback callback/*, final GotoActionCallback<T> callback*/) {

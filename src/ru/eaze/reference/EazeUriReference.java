@@ -8,7 +8,6 @@ import com.intellij.psi.PsiReferenceBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeProjectStructure;
-import ru.eaze.domain.EazeSite;
 
 public class EazeUriReference extends PsiReferenceBase<PsiElement> {
 
@@ -22,23 +21,10 @@ public class EazeUriReference extends PsiReferenceBase<PsiElement> {
         if (structure == null) {
             return null;
         }
-
-        final EazeSite.Host firstHost = structure.getFirstHost();   //TODO: do we really need the first host?
-        final VirtualFile webDir = structure.getWebDir();
-        if (firstHost == null) {
-            return null;
-        }
-
-        String str = firstHost.translateEazePath(getValue());
-        if (str == null) {
-            return null;
-        }
-
-        VirtualFile targetFile = webDir.findFileByRelativePath(str);
+        VirtualFile targetFile = structure.resolveEazeUri(getValue());
         if (targetFile != null) {
             return PsiManager.getInstance(this.getElement().getProject()).findFile(targetFile);
         }
-
         return null;
     }
 
