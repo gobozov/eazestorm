@@ -83,9 +83,12 @@ public class EazeActionsIndex extends FileBasedIndexExtension<String, Integer> {
         public Map<String, Integer> map(@NotNull FileContent inputData) {
             Map<String, Integer> result = new HashMap<String, Integer>();
             EazeProjectStructure structure = EazeProjectStructure.forProject(inputData.getProject());
-            if (structure != null && structure.isActionsConfigFile(inputData.getFile())) {
+            if (structure != null && (structure.isActionsConfigFile(inputData.getFile()) || structure.isPagesConfigFile(inputData.getFile()))) {
                 XmlFile file = (XmlFile) inputData.getPsiFile();
-                String packageName = inputData.getFile().getParent() != null ? inputData.getFile().getParent().getName() : "";
+                String prefix = "";
+                if (!structure.isPagesConfigFile(inputData.getFile())) {
+                    prefix = (inputData.getFile().getParent() != null ? inputData.getFile().getParent().getName() : "") + ".";
+                }
                 XmlTag root = file.getRootTag();
                 if (root != null) {
                     Collection<XmlTag> actions = collectActionTags(root);
@@ -94,7 +97,7 @@ public class EazeActionsIndex extends FileBasedIndexExtension<String, Integer> {
                         if (name != null) {
                             String actionName = name.getValue();
                             if (actionName != null && !actionName.isEmpty()) {
-                                result.put(packageName + "." + actionName, action.getTextOffset());
+                                result.put(prefix + actionName, action.getTextOffset());
                             }
                         }
                     }
