@@ -26,7 +26,8 @@ public class EazePagesReferenceProvider extends PsiReferenceProvider {
     public PsiReference[] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
         EazeProjectStructure structure = EazeProjectStructure.forProject(element.getProject());
         PsiFile file = element.getContainingFile();
-        if (structure == null || file == null || !file.isValid() || !structure.isPagesConfigFile(file.getVirtualFile())) {
+        if (structure == null || file == null || !file.isValid()
+                || !(structure.isPagesConfigFile(file) || structure.isPagesConfigFile(file.getOriginalFile().getVirtualFile()))) {
             return PsiReference.EMPTY_ARRAY;
         }
         if (element instanceof XmlTag) {

@@ -66,6 +66,14 @@ public class EazeProjectStructure {
         return file.equals(pagesFile);
     }
 
+    public boolean isPagesConfigFile(PsiFile file) {
+        if (file == null || !file.isValid()) {
+            return false;
+        }
+        PsiFile pagesFile = getPagesXmlFile();
+        return file.equals(pagesFile);
+    }
+
     @Nullable
     private VirtualFile getPagesFile() {
         return webDir.findFileByRelativePath("etc/conf/pages.xml");

@@ -1,5 +1,6 @@
 package ru.eaze.reference;
 
+import com.intellij.codeInsight.completion.CompletionUtilCore;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReferenceBase;
@@ -48,9 +49,11 @@ public class EazeActionReference extends PsiReferenceBase<PsiElement> {
         if (structure != null) {
             Collection<String> names = structure.getAvailableActionNames();
             Collection<String> variants = new ArrayList<String>();
+            int dummy = actionName.indexOf(CompletionUtilCore.DUMMY_IDENTIFIER_TRIMMED);
+            String prefix = dummy > 0 ? actionName.substring(0, dummy) : actionName;
             for (String name : names) {
-                if (name.startsWith(actionName)) {
-                    int index = name.indexOf(".", actionName.length());
+                if (name.startsWith(prefix)) {
+                    int index = name.indexOf(".", prefix.length());
                     if (index > 0) {
                         variants.add(name.substring(0, index));
                     } else {
