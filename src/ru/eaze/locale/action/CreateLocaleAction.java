@@ -130,27 +130,30 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
             if (!silentMode) Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
             return false;
         }
-        if (EazeLocaleUtil.isLocaleFile(file, project)) {
-            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
-            return false;
-        }
-
-        final PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
-        if (psiFile == null) {
-            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
-            return false;
-        }
-        final PsiDocumentManager manager = PsiDocumentManager.getInstance(psiFile.getProject());
-        final Document document = manager.getDocument(psiFile);
-        if (document == null) {
-            if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
-            return false;
-        }
-        manager.doPostponedOperationsAndUnblockDocument(document);
 
         return new WriteCommandAction<Boolean>(project) {
             @Override
             protected void run(@NotNull Result<Boolean> result) throws Throwable {
+                if (EazeLocaleUtil.isLocaleFile(file, project)) {
+                    if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+                    result.setResult(false);
+                    return;
+                }
+
+                final PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+                if (psiFile == null) {
+                    if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+                    result.setResult(false);
+                    return;
+                }
+                final PsiDocumentManager manager = PsiDocumentManager.getInstance(psiFile.getProject());
+                final Document document = manager.getDocument(psiFile);
+                if (document == null) {
+                    if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
+                    result.setResult(false);
+                    return;
+                }
+                manager.doPostponedOperationsAndUnblockDocument(document);
                 manager.commitDocument(document);
 
                 XmlTag root = ((XmlFile)psiFile).getRootTag();
