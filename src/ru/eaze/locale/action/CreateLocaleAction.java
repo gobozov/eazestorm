@@ -134,7 +134,7 @@ public class CreateLocaleAction extends BaseIntentionAction implements Iconable 
         return new WriteCommandAction<Boolean>(project) {
             @Override
             protected void run(@NotNull Result<Boolean> result) throws Throwable {
-                if (EazeLocaleUtil.isLocaleFile(file, project)) {
+                if (!EazeLocaleUtil.isLocaleFile(file, project)) {
                     if (!silentMode) Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
                     result.setResult(false);
                     return;
