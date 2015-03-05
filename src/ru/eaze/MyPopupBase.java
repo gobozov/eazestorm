@@ -721,23 +721,10 @@ public abstract class MyPopupBase {
         myTextPopup.setLocation(bounds.getLocation());
 
         new MnemonicHelper().register(myTextFieldPanel);
-        final boolean previousUpdate;
-        final DaemonCodeAnalyzer daemonCodeAnalyzer = DaemonCodeAnalyzer.getInstance(myProject);
+        DaemonCodeAnalyzer daemonCodeAnalyzer = DaemonCodeAnalyzer.getInstance(myProject);
         if (daemonCodeAnalyzer != null) {
-            previousUpdate = ((DaemonCodeAnalyzerImpl) daemonCodeAnalyzer).isUpdateByTimerEnabled();
-            daemonCodeAnalyzer.setUpdateByTimerEnabled(false);
-        } else {
-            previousUpdate = false;
+            daemonCodeAnalyzer.disableUpdateByTimer(myTextPopup);
         }
-
-        Disposer.register(myTextPopup, new Disposable() {
-            //@Override
-            public void dispose() {
-                if (daemonCodeAnalyzer != null) {
-                    daemonCodeAnalyzer.setUpdateByTimerEnabled(previousUpdate);
-                }
-            }
-        });
         myTextPopup.show(layeredPane);
     }
 
