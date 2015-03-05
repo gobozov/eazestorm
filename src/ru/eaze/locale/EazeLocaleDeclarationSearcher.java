@@ -5,8 +5,7 @@ import com.intellij.pom.PomDeclarationSearcher;
 import com.intellij.pom.PomTarget;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.impl.source.tree.LeafPsiElement;
-import com.intellij.psi.xml.XmlToken;
-import com.intellij.psi.xml.XmlTokenType;
+import com.intellij.psi.xml.*;
 import com.intellij.util.Consumer;
 import com.jetbrains.php.lang.psi.elements.*;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +20,7 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
     private static final String TRANSLATE_METHOD_NAME = "Translate";
     private static final String T_FUNCTION = "T";
 
-    private static  final Pattern LANG_PATTERN = Pattern.compile("\\{lang:([^&].*)\\}");
+    private static  final Pattern LANG_PATTERN = Pattern.compile(".*\\{lang:([^&].*)\\}.*");
 
     @Override
     public void findDeclarationsAt(@NotNull PsiElement element, int offsetInElement, Consumer<PomTarget> consumer) {
@@ -45,13 +44,13 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
             return (EazeLocaleDeclaration)element;
         }
         if (element instanceof StringLiteralExpression) {
-            return findDeclaration((StringLiteralExpression) element);
-        }
-        if (element instanceof XmlToken) {
-            return findDeclaration((XmlToken)element);
+            return findDeclaration((StringLiteralExpression)element);
         }
         if (element instanceof LeafPsiElement && element.getContext() instanceof StringLiteralExpression) {
             return findDeclaration((StringLiteralExpression)element.getContext());
+        }
+        if (element instanceof XmlElement) {
+            return findDeclaration((XmlElement)element);
         }
         return null;
     }
@@ -76,11 +75,14 @@ public class EazeLocaleDeclarationSearcher extends PomDeclarationSearcher {
         return null;
     }
 
-    private static EazeLocaleDeclaration findDeclaration(XmlToken element) {
-        if (element.getTokenType() == XmlTokenType.XML_DATA_CHARACTERS) {
+    private static EazeLocaleDeclaration findDeclaration(XmlElement element) {
+        if (element.getNode().getElementType() == XmlTokenType.XML_DATA_CHARACTERS
+                || element.getNode().getElementType() == XmlTokenType.XML_ATTRIBUTE_VALUE_TOKEN
+                || element.getNode().getElementType() == XmlElementType.XML_ATTRIBUTE_VALUE) {
+
             Matcher matcher = LANG_PATTERN.matcher(element.getText());
             if (matcher.matches() && matcher.groupCount() > 0) {
-                TextRange range = new TextRange(matcher.start(1), matcher.end(1));
+                TextRange range =  new TextRange(matcher.start(1), matcher.end(1));
                 return new EazeLocaleDeclaration(element, range);
             }
         }

@@ -18,7 +18,7 @@ import ru.eaze.locale.EazeLocaleUtil;
 public class EazeLocaleCompletionConfidence extends CompletionConfidence {
     @NotNull
     @Override
-    public ThreeState shouldSkipAutopopup(PsiElement contextElement, PsiFile psiFile, int offset) {
+    public ThreeState shouldSkipAutopopup(@NotNull PsiElement contextElement, @NotNull PsiFile psiFile, int offset) {
         if(!(psiFile instanceof PhpFile || psiFile instanceof XmlFile)) {
             return ThreeState.UNSURE;
         }
