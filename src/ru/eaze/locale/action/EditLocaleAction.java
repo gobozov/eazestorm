@@ -98,7 +98,7 @@ public class EditLocaleAction extends BaseIntentionAction implements Iconable {
             Messages.showErrorDialog(project, INVALID_KEY, ERROR_TITLE);
             return;
         }
-        if (EazeLocaleUtil.isLocaleFile(localeFile, project)) {
+        if (!EazeLocaleUtil.isLocaleFile(localeFile, project)) {
             Messages.showErrorDialog(project, INVALID_FILE, ERROR_TITLE);
             return;
         }
