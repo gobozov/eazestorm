@@ -84,22 +84,27 @@ public class EazeLocaleUtil {
             }
             //check key
             XmlTag tag = findTagForKey(project, file, key);
-            if (tag != null && tag.getSubTags().length == 0) {
-                continue;
+            if (tag != null) {
+                if (tag.getSubTags().length == 0 && tag.getValue().getTrimmedText().isEmpty())
+                    continue;
+                else
+                    return false;
             }
             //check parents
-            int end = key.lastIndexOf(LOCALE_KEY_DELIMITER);
-            String subKey = end < 0 ? "" : key.substring(0, end);
-            while (subKey.length() > 0) {
-                tag = findTagForKey(project, file, subKey);
-                if (tag != null) {
-                    if (isValueTag(tag))
-                        return false;
-                    else
-                        break;  //acceptable parent
+            {
+                int end = key.lastIndexOf(LOCALE_KEY_DELIMITER);
+                String subKey = end < 0 ? "" : key.substring(0, end);
+                while (subKey.length() > 0) {
+                    tag = findTagForKey(project, file, subKey);
+                    if (tag != null) {
+                        if (isValueTag(tag))
+                            return false;
+                        else
+                            break;  //acceptable parent
+                    }
+                    end = subKey.lastIndexOf(LOCALE_KEY_DELIMITER);
+                    subKey = end < 0 ? "" : subKey.substring(0, end);
                 }
-                end = subKey.lastIndexOf(LOCALE_KEY_DELIMITER);
-                subKey = end < 0 ? "" : subKey.substring(0, end);
             }
         }
         return true;
