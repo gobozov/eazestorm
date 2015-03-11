@@ -6,6 +6,7 @@ import com.intellij.lang.annotation.Annotator;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.impl.source.tree.LeafPsiElement;
+import com.intellij.psi.xml.XmlAttributeValue;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.indexing.FileBasedIndex;
 import com.jetbrains.php.lang.psi.elements.StringLiteralExpression;
@@ -40,6 +41,9 @@ public class EazeLocaleAnnotator implements Annotator {
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
         if (element instanceof LeafPsiElement && element.getContext() instanceof StringLiteralExpression) {
             return; //prevents duplicate annotations for php string literals
+        }
+        if (element instanceof XmlAttributeValue) {
+            return; //prevents duplicate annotations for attribute values
         }
         EazeLocaleDeclaration declaration = EazeLocaleDeclarationSearcher.findDeclaration(element);
         if (declaration != null) {
