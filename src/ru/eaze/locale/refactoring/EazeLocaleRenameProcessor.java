@@ -12,7 +12,6 @@ import com.intellij.util.CommonProcessors;
 import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.findUsages.EazeLocaleFindUsagesHandlerFactory;
 
 import java.util.ArrayList;
@@ -25,10 +24,10 @@ public class EazeLocaleRenameProcessor extends BaseRefactoringProcessor {
     private static final String USAGES_HEADER = "Key usages to be changed";
     private static final String REFERENCES_HEADER = "Localization files to be changed";
 
-    private final EazeLocaleDeclaration declaration;
+    private final PsiNamedElement declaration;
     private final String newName;
 
-    protected EazeLocaleRenameProcessor(@NotNull EazeLocaleDeclaration declaration, @NotNull String newName) {
+    protected EazeLocaleRenameProcessor(@NotNull PsiNamedElement declaration, @NotNull String newName) {
         super(declaration.getProject());
         this.declaration = declaration;
         this.newName = newName;
@@ -82,7 +81,7 @@ public class EazeLocaleRenameProcessor extends BaseRefactoringProcessor {
     @Override
     protected void performRefactoring(UsageInfo[] usages) {
         try {
-            String oldName = declaration.getName();
+            String oldName = declaration.getName() == null ? "" : declaration.getName();
             RenameUtil.doRename(declaration, newName, UsageInfo.EMPTY_ARRAY, myProject, null);
             for (UsageInfo usage : usages) {
                 String usageName = usage.getElement() == null ? null : ((PsiNamedElement)usage.getElement()).getName();
@@ -99,6 +98,6 @@ public class EazeLocaleRenameProcessor extends BaseRefactoringProcessor {
 
     @Override
     protected String getCommandName() {
-        return String.format(COMMAND_NAME, declaration.getValue());
+        return String.format(COMMAND_NAME, declaration.getName());
     }
 }

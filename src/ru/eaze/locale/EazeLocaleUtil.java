@@ -50,7 +50,7 @@ public class EazeLocaleUtil {
         return true;
     }
 
-    public static boolean deepIsValidKey(String key, Project project) {
+    public static boolean deepIsValidKey(String key, @NotNull Project project) {
         if (!isValidKey(key)) {
             return false;
         }
@@ -68,10 +68,7 @@ public class EazeLocaleUtil {
         return false;
     }
 
-    public static boolean canCreateKey(Project project, Collection<VirtualFile> files, String key) {
-        if (project == null) {
-            return false;
-        }
+    public static boolean canCreateKey(@NotNull Project project, Collection<VirtualFile> files, String key) {
         if (files == null || files.isEmpty()) {
             return false;
         }
@@ -110,7 +107,7 @@ public class EazeLocaleUtil {
         return true;
     }
 
-    public static boolean canCreateKey(Project project, String key) {
+    public static boolean canCreateKey(@NotNull Project project, String key) {
         return canCreateKey(project, getLocaleFiles(project), key);
     }
 
@@ -155,10 +152,7 @@ public class EazeLocaleUtil {
     }
 
     @Nullable
-    public static XmlTag findTagForKey(Project project, VirtualFile file, String key) {
-        if (project == null) {
-            return null;
-        }
+    public static XmlTag findTagForKey(@NotNull Project project, VirtualFile file, String key) {
         if (file == null || !file.isValid()) {
             return null;
         }
@@ -173,7 +167,7 @@ public class EazeLocaleUtil {
     }
 
     @NotNull
-    public static Collection<XmlTag> findTagsForKey(Project project, String key) {
+    public static Collection<XmlTag> findTagsForKey(@NotNull Project project, String key) {
         Collection<XmlTag> tags = new ArrayList<XmlTag>();
         for (VirtualFile file : getLocaleFiles(project)) {
             XmlTag tag = findTagForKey(project, file, key);
@@ -182,6 +176,25 @@ public class EazeLocaleUtil {
             }
         }
         return tags;
+    }
+
+    @Nullable
+    public static String extractTagKey(XmlTag tag) {
+        if (tag == null || !tag.isValid()) {
+            return null;
+        }
+        if (tag.getContainingFile() == null || !isLocaleFile(tag.getContainingFile().getVirtualFile(), tag.getProject())) {
+            return null;
+        }
+        XmlTag root = ((XmlFile)tag.getContainingFile()).getRootTag();
+        if (tag.equals(root)) {
+            return null;
+        }
+        String key = tag.getName();
+        for (XmlTag parent = tag.getParentTag(); parent != null && !parent.equals(root); parent = parent.getParentTag()) {
+            key = parent.getName() + LOCALE_KEY_DELIMITER + key;
+        }
+        return key;
     }
 
     public static boolean isValueTag(XmlTag tag) {
@@ -207,7 +220,7 @@ public class EazeLocaleUtil {
     }
 
     @NotNull
-    public static String createTextForAnnotation(String key, Project project) {
+    public static String createTextForAnnotation(String key, @NotNull Project project) {
         String text = "";
         EazeProjectStructure structure = EazeProjectStructure.forProject(project);
         if (structure == null) {
@@ -280,7 +293,7 @@ public class EazeLocaleUtil {
         return files;
     }
 
-    public static boolean isLocaleFile(VirtualFile file, Project project) {
+    public static boolean isLocaleFile(VirtualFile file, @NotNull Project project) {
         if (file == null || !file.isValid() || file.getFileType() != XmlFileType.INSTANCE) {
             return false;
         }

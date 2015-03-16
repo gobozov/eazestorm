@@ -9,6 +9,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.PsiNamedElement;
 import com.intellij.psi.util.PsiUtilCore;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.usageView.UsageInfo;
@@ -35,15 +36,12 @@ public class EazeLocaleFindUsagesHandler extends FindUsagesHandler {
     }
 
     @Override
-    public boolean processElementUsages(@NotNull PsiElement element, @NotNull final Processor<UsageInfo> processor, @NotNull final FindUsagesOptions options) {
+    public boolean processElementUsages(@NotNull final PsiElement element, @NotNull final Processor<UsageInfo> processor, @NotNull final FindUsagesOptions options) {
         if (element instanceof EazeLocaleDeclaration || element instanceof EazeLocaleNavigationElement) {
-            final EazeLocaleDeclaration target = element instanceof EazeLocaleDeclaration ?
-                                                (EazeLocaleDeclaration)element :
-                                                ((EazeLocaleNavigationElement) element).getDeclaration();
             final String searchString = ApplicationManager.getApplication().runReadAction(new Computable<String>() {
                 @Override
                 public String compute() {
-                    return target.getValue();
+                    return ((PsiNamedElement) element).getName();
                 }
             });
 
@@ -54,7 +52,7 @@ public class EazeLocaleFindUsagesHandler extends FindUsagesHandler {
             final Project project = ApplicationManager.getApplication().runReadAction(new Computable<Project>() {
                 @Override
                 public Project compute() {
-                    return target.getProject();
+                    return element.getProject();
                 }
             });
             final EazeProjectStructure structure = EazeProjectStructure.forProject(project);
@@ -65,10 +63,10 @@ public class EazeLocaleFindUsagesHandler extends FindUsagesHandler {
             final UsageInfoFactory factory = new UsageInfoFactory() {
                 @Override
                 public UsageInfo createUsageInfo(@NotNull PsiElement usage, int startOffset, int endOffset) {
-                    if (target.getTextRange() != null
-                            && usage.getContainingFile() == target.getContainingFile()
-                            && target.getTextRange().contains(startOffset)
-                            && target.getTextRange().contains(endOffset)) {
+                    if (element.getTextRange() != null
+                            && usage.getContainingFile() == element.getContainingFile()
+                            && element.getTextRange().contains(startOffset)
+                            && element.getTextRange().contains(endOffset)) {
                         return null;
                     }
 
@@ -132,26 +130,25 @@ public class EazeLocaleFindUsagesHandler extends FindUsagesHandler {
                 }
             }
 
-            //when reference has 0 or multiple strict resolutions
-            if (element instanceof EazeLocaleDeclaration) {
-                return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
-                    @Override
-                    public Boolean compute() {
-                        Collection<XmlTag> tags = EazeLocaleUtil.findTagsForKey(project, searchString);
-                        for (XmlTag tag : tags) {
-                            EazeLocaleNavigationElement navigation = new EazeLocaleNavigationElement(target, tag, searchString);
-                            UsageInfo info =  new UsageInfo(navigation, 1, tag.getName().length() + 1, true);
-                            if (!processor.process(info)) {
-                                return false;
-                            }
 
+            final EazeLocaleDeclaration declaration = element instanceof EazeLocaleDeclaration ?
+                                                (EazeLocaleDeclaration)element :
+                                                ((EazeLocaleNavigationElement) element).getDeclaration();
+            return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
+                @Override
+                public Boolean compute() {
+                    Collection<XmlTag> tags = EazeLocaleUtil.findTagsForKey(project, searchString);
+                    for (XmlTag tag : tags) {
+                        EazeLocaleNavigationElement navigation = new EazeLocaleNavigationElement(declaration, tag, searchString);
+                        UsageInfo info =  new UsageInfo(navigation, 1, tag.getName().length() + 1, true);
+                        if (!processor.process(info)) {
+                            return false;
                         }
-                        return true;
-                    }
-                });
-            }
 
-            return true;
+                    }
+                    return true;
+                }
+            });
         }
 
         return super.processElementUsages(element, processor, options);

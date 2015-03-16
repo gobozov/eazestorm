@@ -1,7 +1,5 @@
 package ru.eaze.locale.refactoring;
 
-import com.intellij.find.findUsages.FindUsagesHandler;
-import com.intellij.find.findUsages.FindUsagesOptions;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.editor.Editor;
@@ -10,21 +8,20 @@ import com.intellij.openapi.ui.InputValidator;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.refactoring.RefactoringFactory;
-import com.intellij.refactoring.RenameRefactoring;
+import com.intellij.psi.PsiNamedElement;
+import com.intellij.psi.PsiReference;
+import com.intellij.psi.xml.XmlElementType;
+import com.intellij.psi.xml.XmlFile;
 import com.intellij.refactoring.rename.RenameHandler;
-import com.intellij.usageView.UsageInfo;
-import com.intellij.util.CommonProcessors.CollectProcessor;
 import com.jetbrains.php.lang.psi.PhpFile;
 import org.jetbrains.annotations.NotNull;
-import ru.eaze.locale.EazeLocaleDeclaration;
 import ru.eaze.locale.EazeLocaleDeclarationSearcher;
-import ru.eaze.locale.findUsages.EazeLocaleFindUsagesHandlerFactory;
-
-import java.util.ArrayList;
-import java.util.Collection;
+import ru.eaze.locale.reference.EazeLocaleNavigationElement;
+import ru.eaze.locale.reference.EazeLocaleTagReference;
 
 public class EazeLocaleRenameHandler implements RenameHandler {
+
+    private static final String HANDLER_NAME = "Rename Eaze localization key";
 
     @Override
     public boolean isAvailableOnDataContext(DataContext dataContext) {
@@ -64,7 +61,7 @@ public class EazeLocaleRenameHandler implements RenameHandler {
     }
 
     private void invoke(@NotNull final Project project, DataContext dataContext) {
-        final EazeLocaleDeclaration declaration = getDeclaration(dataContext);
+        final PsiNamedElement declaration = getDeclaration(dataContext);
         if (declaration != null) {
             String message = String.format("Rename Localization Key %s and its usages to", declaration.getName());
             String newName = Messages.showInputDialog(project, message, "Rename Localization Key", null, declaration.getName(), new InputValidator() {
@@ -86,18 +83,39 @@ public class EazeLocaleRenameHandler implements RenameHandler {
         }
     }
 
-    private static EazeLocaleDeclaration getDeclaration(DataContext context) {
+    private static PsiNamedElement getDeclaration(DataContext context) {
         if (context != null) {
             final Editor editor = CommonDataKeys.EDITOR.getData(context);
             if (editor != null) {
                 final int offset = editor.getCaretModel().getOffset();
                 final PsiFile file = CommonDataKeys.PSI_FILE.getData(context);
-                if (file instanceof PhpFile) {
-                    PsiElement element = file.getViewProvider().findElementAt(offset);
-                    return EazeLocaleDeclarationSearcher.findDeclaration(element);
+                PsiElement element = file == null ? null : file.getViewProvider().findElementAt(offset);
+                if (element != null) {
+                    if (file instanceof PhpFile) {
+                        return EazeLocaleDeclarationSearcher.findDeclaration(element);
+                    }
+                    if (file instanceof XmlFile) {
+                        PsiReference[] references = PsiReference.EMPTY_ARRAY;
+                        while (element.getNode().getElementType() != XmlElementType.XML_TAG && element.getParent() != null) {
+                            element = element.getParent();
+                        }
+                        if (element.getNode().getElementType() == XmlElementType.XML_TAG) {
+                            references = element.getReferences();
+                        }
+                        for (PsiReference reference : references) {
+                            if (reference instanceof EazeLocaleTagReference) {
+                                return (EazeLocaleNavigationElement) reference.resolve();
+                            }
+                        }
+                    }
                 }
             }
         }
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return HANDLER_NAME;
     }
 }
