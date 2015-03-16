@@ -39,7 +39,7 @@ public class EazeActionsReferenceProvider extends PsiReferenceProvider {
     private PsiReference[] getReferencesByElement(@NotNull XmlTag tag) {
         if (tag.getName().equals("path") && !tag.getValue().getTrimmedText().isEmpty() && tag.getParentTag() != null && tag.getParentTag().getName().equals("action")) {
             VirtualFile actionFile = EazeProjectStructure.getFileByActionTag(tag.getParentTag());
-            String actionPath = actionFile == null ? "" : actionFile.getPath().substring(tag.getProject().getBasePath().length());
+            String actionPath = (actionFile == null || tag.getProject().getBasePath() == null) ? "" : actionFile.getPath().substring(tag.getProject().getBasePath().length());
             XmlText text = tag.getValue().getTextElements()[0];
             int offset = text.getStartOffsetInParent();
             return new PsiReference[] { new EazeActionPhpReference(actionPath, tag, new TextRange(offset, offset + text.getTextLength())) };
@@ -54,13 +54,11 @@ public class EazeActionsReferenceProvider extends PsiReferenceProvider {
                 XmlTag tag = attr.getParent();
                 if (tag.getName().equals("action")) {
                     VirtualFile actionFile = EazeProjectStructure.getFileByActionTag(tag);
-                    if (actionFile != null) {  // чтобы не подсвечивало красным сразу две строчки
-                        String actionPath = actionFile.getPath().substring(attrValue.getProject().getBasePath().length());
-                        int start = attrValue.getText().indexOf(attrValue.getValue());
-                        int end = start + attrValue.getValue().length();
-                        PsiReference ref = new EazeActionPhpReference(actionPath, attrValue, new TextRange(start, end));
-                        return new PsiReference[]{ref};
-                    }
+                    String actionPath = (actionFile == null || attrValue.getProject().getBasePath() == null) ? "" : actionFile.getPath().substring(attrValue.getProject().getBasePath().length());
+                    int start = attrValue.getText().indexOf(attrValue.getValue());
+                    int end = start + attrValue.getValue().length();
+                    PsiReference ref = new EazeActionPhpReference(actionPath, attrValue, new TextRange(start, end));
+                    return new PsiReference[]{ref};
                 }
             }
         }
