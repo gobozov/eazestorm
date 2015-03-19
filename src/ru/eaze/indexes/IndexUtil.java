@@ -12,7 +12,8 @@ public class IndexUtil {
                 EazeActionsIndex.NAME,
                 EazePathIndex.NAME,
                 EazeLocaleKeyIndex.NAME,
-                EazeLocaleUsagesIndex.NAME
+                EazeLocaleUsagesIndex.NAME,
+                EazeLocaleKeyPrefixIndex.NAME
         };
         for(ID<?,?> id: indexes) {
             FileBasedIndex.getInstance().requestRebuild(id);

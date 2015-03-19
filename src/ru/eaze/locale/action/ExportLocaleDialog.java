@@ -1,27 +1,47 @@
 package ru.eaze.locale.action;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.editor.event.DocumentAdapter;
+import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.ui.EditorTextField;
+import com.intellij.ui.TextFieldWithAutoCompletion;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.table.TableView;
 import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.util.Processor;
+import com.intellij.util.indexing.FileBasedIndex;
 import com.intellij.util.ui.ColumnInfo;
 import com.intellij.util.ui.ListTableModel;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ru.eaze.domain.EazeProjectStructure;
+import ru.eaze.indexes.EazeLocaleKeyPrefixIndex;
 import ru.eaze.locale.EazeLocaleUtil;
 
-import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import java.awt.event.*;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.KeyStroke;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.TreeSet;
 
 public class ExportLocaleDialog extends JDialog {
 
@@ -36,10 +56,12 @@ public class ExportLocaleDialog extends JDialog {
     private JPanel contentPane;
     private JButton buttonOK;
     private JButton buttonCancel;
-    private JTextField localeKey;
     private JPanel filesPanel;
     private JLabel errorMessage;
-    private JTextField localeText;
+    private JPanel localeKeyPanel;
+    private JPanel localeTextPanel;
+    private EditorTextField localeKey;
+    private EditorTextField localeText;
 
     private Project project;
     private Callback callback;
@@ -53,38 +75,25 @@ public class ExportLocaleDialog extends JDialog {
         setModal(true);
         getRootPane().setDefaultButton(buttonOK);
 
-        localeKey.setText(keyPrefix);
-        localeKey.getDocument().addDocumentListener(new DocumentListener() {
+        Collection<String> completions = getKeyCompletions("");
+        localeKey = TextFieldWithAutoCompletion.create(project, completions, false, keyPrefix);
+        localeKeyPanel.add(localeKey, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+                GridConstraints.SIZEPOLICY_CAN_GROW | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null));
+        localeKey.getDocument().addDocumentListener(new DocumentAdapter() {
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                validateInput();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                validateInput();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
+            public void documentChanged(DocumentEvent e) {
                 validateInput();
             }
         });
 
-        localeText.setText(initialText);
-        localeText.getDocument().addDocumentListener(new DocumentListener() {
+        localeText = new EditorTextField(initialText);
+        localeTextPanel.add(localeText, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+                GridConstraints.SIZEPOLICY_CAN_GROW | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null));
+        localeText.getDocument().addDocumentListener(new DocumentAdapter() {
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                validateInput();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                validateInput();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
+            public void documentChanged(DocumentEvent e) {
                 validateInput();
             }
         });
@@ -177,6 +186,29 @@ public class ExportLocaleDialog extends JDialog {
         buttonOK.setEnabled(true);
     }
 
+    private Collection<String> getKeyCompletions(final String prefix) {
+        final Collection<String> result = new TreeSet<String>();
+
+        EazeProjectStructure structure = EazeProjectStructure.forProject(project);
+        if (structure == null) return result;
+
+        final GlobalSearchScope scope = structure.projectScope();
+        Processor<String> processor = new Processor<String>() {
+            @Override
+            public boolean process(String key) {
+                if (key.startsWith(prefix)) {
+                    Collection<VirtualFile> files = FileBasedIndex.getInstance().getContainingFiles(EazeLocaleKeyPrefixIndex.NAME, key, scope);
+                    if (files.size() > 0) {
+                        result.add(key);
+                    }
+                }
+                return true;
+            }
+        };
+        FileBasedIndex.getInstance().processAllKeys(EazeLocaleKeyPrefixIndex.NAME, processor, project);
+        return result;
+    }
+
     private List<VirtualFile> selectedFiles() {
         List<VirtualFile> selected = new ArrayList<VirtualFile>();
         for (FileSelectionModel model : localeFiles.getItems()) {
@@ -257,7 +289,9 @@ public class ExportLocaleDialog extends JDialog {
         @Override
         public String valueOf(FileSelectionModel model) {
             String path = model.getFile().getPath();
-            path = path.substring(project.getBasePath().length());
+            if (project.getBasePath() != null) {
+                path = path.substring(project.getBasePath().length());
+            }
             return path;
         }
     }
