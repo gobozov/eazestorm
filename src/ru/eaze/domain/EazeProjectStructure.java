@@ -23,6 +23,7 @@ import ru.eaze.indexes.EazePathIndex;
 import ru.eaze.settings.Settings;
 import ru.eaze.util.RegexpUtils;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -466,110 +467,114 @@ public class EazeProjectStructure {
             ArrayList<MyListElement> elements = new ArrayList<MyListElement>();
             try {
                 urlStr = URLDecoder.decode(urlStr, "utf-8");
-                URL url = null;
-                try {
-                    url = new URL(urlStr);
-                } catch (Exception ignored) {
+            } catch (UnsupportedEncodingException ignored) {
+            }
+            URL url = null;
+            try {
+                url = new URL(urlStr);
+            } catch (Exception ignored) {
+            }
+            if (url == null || !url.getProtocol().contains("http")) {
+                EazeSite.Host tempHost = getFirstHost();
+                if (tempHost != null) {
+                    String path = tempHost.translateEazePath(urlStr);
+                    urlStr = "http://localhost" + path;
+                    try {
+                        url = new URL(urlStr);
+                    } catch (Exception ex) {
+                        return new Object[0];
+                    }
                 }
-                if (url == null || !url.getProtocol().contains("http")) {
-                    EazeSite.Host tempHost = getFirstHost();
-                    if (tempHost != null) {
-                        String path = tempHost.translateEazePath(urlStr);
-                        urlStr = "http://localhost" + path;
+
+            }
+            EazeSite.Host host = detectHost(urlStr);
+
+            if (host == null) {
+                host = getFirstHost();
+            }
+            if (host != null) {
+                if (!pages.containsKey(host)) {
+                    loadPagesForHost(host);
+                }
+                String path = host.getPagePathByURL(url);
+                ArrayList<EazePage> hostPages = pages.get(host);
+                if (hostPages != null) {
+                    for (EazePage page : hostPages) {
+                        boolean matched;
                         try {
-                            url = new URL(urlStr);
-                        } catch (Exception ignored) {
-                        }
-                    }
-
-                }
-                EazeSite.Host host = detectHost(urlStr);
-
-                if (host == null) {
-                    host = getFirstHost();
-                }
-                if (host != null) {
-                    if (!pages.containsKey(host)) {
-                        loadPagesForHost(host);
-                    }
-                    String path = host.getPagePathByURL(url);
-                    ArrayList<EazePage> hostPages = pages.get(host);
-                    if (hostPages != null)
-                        for (EazePage page : hostPages) {
-                            java.util.List<String> regs = new ArrayList<String>();
-
                             String regexp = "{^(" + page.getTranslatedURI() + ")(\\?(?:.*)|$)}i";
-                            if (RegexpUtils.preg_match(regexp, path, regs)
-                                    || page.getTranslatedURI().equals(path)   // сомнительно.. хм...
-                                    ) {
-                                String templateName = page.getTemplatePath();
+                            matched = page.getTranslatedURI().equals(path) || RegexpUtils.preg_match(regexp, path, null);
+                        } catch (Exception ex) {
+                            continue;
+                        }
 
-                                String[] actions = page.getActions();
-                                for (int i = actions.length - 1; i >= 0; i--) {
-                                    String fullActionName = actions[i];
-                                    EazeAction action = getActionByFullName(fullActionName);
-                                    if (action != null) {
-                                        VirtualFile file = action.getFile();
-                                        if (file != null) {
-                                            String fileName = action.getFile().getPath();
-                                            MyListElement el = new MyListElement(fileName, file, "action", fullActionName);
-                                            elements.add(el);
-                                        }
+                        if (matched) {
+                            String templateName = page.getTemplatePath();
+                            String[] actions = page.getActions();
+                            for (int i = actions.length - 1; i >= 0; i--) {
+                                String fullActionName = actions[i];
+                                EazeAction action = getActionByFullName(fullActionName);
+                                if (action != null) {
+                                    VirtualFile file = action.getFile();
+                                    if (file != null) {
+                                        String fileName = action.getFile().getPath();
+                                        MyListElement el = new MyListElement(fileName, file, "action", fullActionName);
+                                        elements.add(el);
                                     }
                                 }
+                            }
 
-                                if (!templateName.isEmpty()) {
-                                    VirtualFile file = page.getFile();
+                            if (!templateName.isEmpty()) {
+                                VirtualFile file = page.getFile();
 
-                                    if (file != null) {
-                                        MyListElement el = new MyListElement(templateName, file, "tmpl", "");
-                                        elements.add(el);
+                                if (file != null) {
+                                    MyListElement el = new MyListElement(templateName, file, "tmpl", "");
+                                    elements.add(el);
 
-                                        PsiFile psiTemplate = PsiManager.getInstance(project).findFile(file);
-                                        String text = psiTemplate != null ? psiTemplate.getText() : "";
-                                        List<List<String>> rez = new ArrayList<List<String>>();
-                                        RegexpUtils.preg_match_all("/\\{increal:(.+?)\\}/", text, rez);
+                                    PsiFile psiTemplate = PsiManager.getInstance(project).findFile(file);
+                                    String text = psiTemplate != null ? psiTemplate.getText() : "";
+                                    List<List<String>> rez = new ArrayList<List<String>>();
+                                    RegexpUtils.preg_match_all("/\\{increal:(.+?)\\}/", text, rez);
 
-                                        for (List<String> aRez : rez) {
-                                            String templatePath = aRez.get(1);
-                                            if (templatePath != null) {
-                                                String translatedPath = host.translateEazePath(templatePath);
-                                                VirtualFile templateFile = webDir.findFileByRelativePath(translatedPath);
-                                                if (templateFile != null) {
-                                                    MyListElement _el = new MyListElement(templateFile.getName(), templateFile, "tmpl", "", true);
-                                                    elements.add(_el);
-                                                }
+                                    for (List<String> aRez : rez) {
+                                        String templatePath = aRez.get(1);
+                                        if (templatePath != null) {
+                                            String translatedPath = host.translateEazePath(templatePath);
+                                            VirtualFile templateFile = webDir.findFileByRelativePath(translatedPath);
+                                            if (templateFile != null) {
+                                                MyListElement _el = new MyListElement(templateFile.getName(), templateFile, "tmpl", "", true);
+                                                elements.add(_el);
                                             }
                                         }
                                     }
                                 }
-
-                                actions = page.getBootActions();
-                                for (String fullActionName : actions) {
-                                    EazeAction action = getActionByFullName(fullActionName);
-                                    if (action != null) {
-                                        VirtualFile file = action.getFile();
-                                        String fileName = action.getFile().getPath();
-                                        MyListElement el = new MyListElement(fileName, file, "boot", fullActionName);
-                                        elements.add(el);
-                                    }
-                                }
-
-                                actions = page.getShutdownActions();
-                                for (String fullActionName : actions) {
-                                    EazeAction action = getActionByFullName(fullActionName);
-                                    if (action != null) {
-                                        VirtualFile file = action.getFile();
-                                        String fileName = action.getFile().getPath();
-                                        MyListElement el = new MyListElement(fileName, file, "shutdown", fullActionName);
-                                        elements.add(el);
-                                    }
-                                }
-                                return elements.toArray();
                             }
+
+                            actions = page.getBootActions();
+                            for (String fullActionName : actions) {
+                                EazeAction action = getActionByFullName(fullActionName);
+                                if (action != null) {
+                                    VirtualFile file = action.getFile();
+                                    String fileName = action.getFile().getPath();
+                                    MyListElement el = new MyListElement(fileName, file, "boot", fullActionName);
+                                    elements.add(el);
+                                }
+                            }
+
+                            actions = page.getShutdownActions();
+                            for (String fullActionName : actions) {
+                                EazeAction action = getActionByFullName(fullActionName);
+                                if (action != null) {
+                                    VirtualFile file = action.getFile();
+                                    String fileName = action.getFile().getPath();
+                                    MyListElement el = new MyListElement(fileName, file, "shutdown", fullActionName);
+                                    elements.add(el);
+                                }
+                            }
+                            return elements.toArray();
                         }
+                    }
                 }
-            } catch (Exception ignored) {
             }
             return elements.toArray();
         }
