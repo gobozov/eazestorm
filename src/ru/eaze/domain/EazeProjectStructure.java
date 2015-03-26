@@ -1,5 +1,8 @@
 package ru.eaze.domain;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -22,7 +25,12 @@ import ru.eaze.util.RegexpUtils;
 
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -286,6 +294,10 @@ public class EazeProjectStructure {
 
         private void init() {
             VirtualFile sitesXml = getSitesFile();
+            if (sitesXml == null || !sitesXml.isValid()) {
+                Notifications.Bus.notify(new Notification("EazeStorm", "Eaze project error", "Missing file etc/conf/sites.xml in web directory", NotificationType.ERROR));
+                return;
+            }
             readSitesXml(project, sitesXml);
         }
 
