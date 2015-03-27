@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 
 public class EazeLocaleUsagesIndex extends FileBasedIndexExtension<String, Collection<Integer>> {
 
-    private static  final Pattern LANG_PATTERN = Pattern.compile("(?:(\\{lang:.+\\}))");
+    private static  final Pattern LANG_PATTERN = Pattern.compile("(?:(\\{lang:.+?\\}))");
 
     @NonNls
     public static final ID<String, Collection<Integer>> NAME = ID.create("eazestorm.EazeLocaleUsagesIndex");
