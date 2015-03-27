@@ -32,6 +32,11 @@ public class EazeLocaleDeclaration extends PsiElementBase implements PsiDeclared
         this.softDeclaration = softDeclaration;
     }
 
+    @NotNull
+    public PsiElement getElement() {
+        return baseElement;
+    }
+
     @Override
     public PsiManager getManager() {
         return baseElement.getManager();
