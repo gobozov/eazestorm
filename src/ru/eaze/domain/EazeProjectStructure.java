@@ -1,8 +1,5 @@
 package ru.eaze.domain;
 
-import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationType;
-import com.intellij.notification.Notifications;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -16,22 +13,30 @@ import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.Processor;
 import com.intellij.util.indexing.FileBasedIndex;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.indexes.EazeActionsIndex;
 import ru.eaze.indexes.EazePathIndex;
 import ru.eaze.settings.Settings;
+import ru.eaze.util.EazeStormNotifications;
 import ru.eaze.util.RegexpUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -68,33 +73,83 @@ public class EazeProjectStructure {
     }
 
     public boolean isPagesConfigFile(VirtualFile file) {
-        if (file == null || !file.isValid()) {
-            return false;
-        }
-        VirtualFile pagesFile = getPagesFile();
-        return file.equals(pagesFile);
+        return file != null && file.isValid() && file.equals(pagesFile());
     }
 
     public boolean isPagesConfigFile(PsiFile file) {
-        if (file == null || !file.isValid()) {
-            return false;
-        }
-        PsiFile pagesFile = getPagesXmlFile();
-        return file.equals(pagesFile);
+        return file != null && file.isValid() && file.equals(pagesXmlFile());
     }
 
     @Nullable
-    private VirtualFile getPagesFile() {
+    private VirtualFile pagesFile() {
         return webDir.findFileByRelativePath("etc/conf/pages.xml");
     }
 
     @Nullable
-    private XmlFile getPagesXmlFile() {
-        VirtualFile pagesFile = getPagesFile();
-        if (pagesFile != null && pagesFile.isValid()) {
-            PsiFile pagesXml = PsiManager.getInstance(project).findFile(pagesFile);
-            if (pagesXml instanceof XmlFile && pagesXml.isValid()) {
-                return (XmlFile) pagesXml;
+    private VirtualFile pagesCacheFile() {
+        VirtualFile cache = webDir.findFileByRelativePath("cache/");
+        if (cache != null) {
+            VirtualFile candidate = null;
+            for (VirtualFile file : cache.getChildren()) {
+                if (file.getName().startsWith("pages")) {
+                    candidate = file;
+                    break;
+                }
+            }
+
+            if (Settings.forProject(project).isPagesCacheChecksumEnabled()) {
+                VirtualFile pages = pagesFile();
+                if (pages != null) {
+                    try {
+                        String md5 = checksum(pages);
+                        String path = "pages_" + md5 + ".xml";
+                        VirtualFile checkedCandidate = cache.findChild(path);
+                        if (checkedCandidate == null && candidate != null) {
+                            EazeStormNotifications.PAGES_CACHE_CHECKSUM_MISMATCH.show(project);
+                        } else {
+                            EazeStormNotifications.PAGES_CACHE_CHECKSUM_MISMATCH.expire(project);
+                        }
+                        return checkedCandidate;
+
+                    } catch (IOException ex) {
+                        return null;
+                    }
+                }
+            } else {
+                EazeStormNotifications.PAGES_CACHE_CHECKSUM_MISMATCH.expire(project);
+            }
+            return candidate;
+        }
+        return null;
+    }
+
+    private String checksum(VirtualFile file) throws IOException {
+        InputStream input = null;
+        try {
+            input = file.getInputStream();
+            return DigestUtils.md5Hex(input);
+        } finally {
+            if (input != null) {
+                input.close();
+            }
+        }
+    }
+
+    @Nullable
+    private XmlFile pagesXmlFile() {
+        return xmlFile(pagesFile());
+    }
+
+    @Nullable
+    private XmlFile pagesCacheXmlFile() {
+        return xmlFile(pagesCacheFile());
+    }
+
+    private XmlFile xmlFile(VirtualFile file) {
+        if (file != null && file.isValid()) {
+            PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+            if (psiFile instanceof XmlFile && psiFile.isValid()) {
+                return (XmlFile) psiFile;
             }
         }
         return null;
@@ -189,20 +244,16 @@ public class EazeProjectStructure {
     }
 
     public boolean isSitesConfigFile(VirtualFile file) {
-        if (file == null || !file.isValid()) {
-            return false;
-        }
-        VirtualFile sitesFile = getSitesFile();
-        return file.equals(sitesFile);
+        return file != null && file.isValid() && file.equals(sitesFile());
     }
 
     @Nullable
-    private VirtualFile getSitesFile() {
+    private VirtualFile sitesFile() {
         return webDir.findFileByRelativePath("etc/conf/sites.xml");
     }
 
     public boolean isValidEazeUri(@NotNull String uri) {
-        VirtualFile sitesFile = getSitesFile();
+        VirtualFile sitesFile = sitesFile();
         if (sitesFile == null || !sitesFile.isValid()) {
             return false;
         }
@@ -225,7 +276,7 @@ public class EazeProjectStructure {
 
     @Nullable
     public VirtualFile resolveEazeUri(@NotNull String uri) {
-        VirtualFile sitesFile = getSitesFile();
+        VirtualFile sitesFile = sitesFile();
         if (sitesFile == null || !sitesFile.isValid()) {
             return null;
         }
@@ -286,19 +337,19 @@ public class EazeProjectStructure {
 
         HashMap<String, EazeSite> sites = new HashMap<String, EazeSite>();
         EazeSite firstSite;
-        HashMap<EazeSite.Host, ArrayList<EazePage>> pages = new HashMap<EazeSite.Host, ArrayList<EazePage>>();
-        HashMap<String, String> currentChains = new HashMap<String, String>();
+        HashMap<EazeSite.Host, List<EazePage>> pages = new HashMap<EazeSite.Host, List<EazePage>>();
 
         public LegacyLogic() {
             init();
         }
 
         private void init() {
-            VirtualFile sitesXml = getSitesFile();
+            VirtualFile sitesXml = sitesFile();
             if (sitesXml == null || !sitesXml.isValid()) {
-                Notifications.Bus.notify(new Notification("EazeStorm", "Eaze project error", "Missing file etc/conf/sites.xml in web directory", NotificationType.ERROR));
+                EazeStormNotifications.MISSING_SITES_CONFIG.show(project);
                 return;
             }
+            EazeStormNotifications.MISSING_SITES_CONFIG.expire(project);
             readSitesXml(project, sitesXml);
         }
 
@@ -332,23 +383,50 @@ public class EazeProjectStructure {
                 if (sitesTag != null) {
                     XmlTag[] sitesTags = sitesTag.findSubTags("site");
                     for (XmlTag siteTag : sitesTags) {
-                        this.analyzeSiteTag(siteTag);
+                        analyzeSiteTag(siteTag);
                     }
                 }
             }
         }
 
-        private void loadPagesForHost(EazeSite.Host host) {
-            currentChains.clear();
-            XmlFile pagesXml = getPagesXmlFile();
-            if (pagesXml == null) {
-                return;
+        private void loadPagesForHost(@NotNull EazeSite.Host host) {
+            List<EazePage> pagesList = new LinkedList<EazePage>();
+
+            XmlFile pagesXml = pagesXmlFile();
+            if (pagesXml != null) {
+                pagesList.addAll(listPagesForHost(host, pagesXml));
             }
+            XmlFile pagesCacheXml = pagesCacheXmlFile();
+            if (pagesCacheXml != null) {
+                List<EazePage> cachedPages = listPagesForHost(host, pagesCacheXml);
+                //pages uri resolution depends on the order in which pages are defined in pages.xml
+                //that's why we need to place cache pages for dynamic uris approximately at the position they were supposed to be
+                int prevIndex = -1;
+                for (EazePage cachedPage : cachedPages) {
+                    boolean found = false;
+                    for (int i = 0; i < pagesList.size(); i++) {
+                        EazePage page = pagesList.get(i);
+                        if (StringUtils.equals(page.getTranslatedURI(), cachedPage.getTranslatedURI())) {
+                            found = true;
+                            prevIndex = i;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        pagesList.add(++prevIndex, cachedPage);
+                    }
+                }
+            }
+            pages.put(host, pagesList);
+        }
+
+        @NotNull
+        private List<EazePage> listPagesForHost(@NotNull EazeSite.Host host, @NotNull XmlFile pagesXml) {
             XmlTag sitesTag = pagesXml.getRootTag();
-            String hostSiteName = host.getSite().getName();
             if (sitesTag == null) {
-                return;
+                return Collections.emptyList();
             }
+            String hostSiteName = host.getSite().getName();
             XmlTag[] siteTags = sitesTag.findSubTags("site");
             if (siteTags.length > 0) {
                 XmlTag siteTag = siteTags[0];
@@ -364,6 +442,7 @@ public class EazeProjectStructure {
                 }
                 if (siteNames.contains(hostSiteName)) {
                     XmlTag hostsTag = siteTag.findFirstSubTag("hosts");
+                    HashMap<String, String> chains = new HashMap<String, String>();
                     if (hostsTag != null) {
                         XmlTag[] allHostsTags = hostsTag.findSubTags("host");
                         for (XmlTag hostTag : allHostsTags) {
@@ -376,71 +455,64 @@ public class EazeProjectStructure {
                                 String actionName = action.getAttributeValue("name");
                                 try {
                                     String value = action.getValue().getText();
-                                    currentChains.put(actionName, value);
+                                    chains.put(actionName, value);
                                 } catch (Exception ignored) {
                                 }
                             }
                         }
                     }
                     XmlTag pagesTag = siteTag.findFirstSubTag("pages");
-                    this.analyzePagesGroupsTags(host, pagesTag, "", "");
+                    if (pagesTag != null) {
+                        return listPages(host, pagesTag, "", "", chains);
+                    }
                 }
             }
+            return Collections.emptyList();
         }
 
-        private void analyzePagesGroupsTags(EazeSite.Host host, XmlTag parentTag, String inheritedBoot, String inheritedShutdown) {
+        private List<EazePage> listPages(@NotNull EazeSite.Host host, @NotNull XmlTag parentTag, @NotNull String inheritedBoot, @NotNull String inheritedShutdown, @NotNull Map<String, String> chains) {
+            List<EazePage> pagesList = new ArrayList<EazePage>();
+
             XmlTag[] pagesOrPagesGroupsTags = parentTag.getSubTags();
             for (XmlTag tag : pagesOrPagesGroupsTags) {
-                String boot = inheritedBoot;
-                String shutdown = inheritedShutdown;
                 String tagName = tag.getName();
 
-                String currentTagBoot = tag.getAttributeValue("boot");
-                String currentTagShutdown = tag.getAttributeValue("shutdown");
-                if (currentTagBoot != null) {
-                    boot = currentTagBoot;
-                }
+                String tagBoot = tag.getAttributeValue("boot");
+                String boot = tagBoot == null ? inheritedBoot : tagBoot;
 
-                if (currentTagShutdown != null) {
-                    shutdown = currentTagShutdown;
-                }
+                String tagShutdown = tag.getAttributeValue("shutdown");
+                String shutdown = tagShutdown == null ? inheritedShutdown : tagShutdown;
+
                 if (tagName.equals("page")) {
                     String uri = tag.getAttributeValue("uri");
-                    uri = uri != null ? host.translateEazePath(uri) : "";
+                    uri = uri == null ? "" : host.translateEazePath(uri);
+
                     XmlTag templateTag = tag.findFirstSubTag("template");
-                    XmlTag actionsTag = tag.findFirstSubTag("actions");
-                    String templatePath = "";
-                    String actionString = "";
-
-                    if (templateTag != null) {
-                        templatePath = templateTag.getValue().getText();
-                    }
-
-                    if (actionsTag != null) {
-                        actionString = actionsTag.getValue().getText();
-                    }
-
+                    String templatePath = templateTag == null ? "" : templateTag.getValue().getText();
                     String translatedPath = host.translateEazePath(templatePath);
 
-                    String[] pageActions = actionNamesFromString(actionString);
-                    String[] bootActions = actionNamesFromString(boot);
-                    String[] shutdownActions = actionNamesFromString(shutdown);
+                    XmlTag actionsTag = tag.findFirstSubTag("actions");
+                    String actionString = actionsTag == null ? "" : actionsTag.getValue().getText();
+
+                    String[] pageActions = actionNamesFromString(actionString, chains);
+                    String[] bootActions = actionNamesFromString(boot, chains);
+                    String[] shutdownActions = actionNamesFromString(shutdown, chains);
                     VirtualFile file = webDir.findFileByRelativePath(translatedPath);
+
                     EazePage page = new EazePage(file, translatedPath, uri, pageActions, bootActions, shutdownActions);
-                    if (!pages.containsKey(host)) {
-                        pages.put(host, new ArrayList<EazePage>());
-                    }
-                    pages.get(host).add(page);
+                    pagesList.add(page);
 
                 } else if (tagName.equals("pageGroup")) {
-                    analyzePagesGroupsTags(host, tag, boot, shutdown);
+                    pagesList.addAll(listPages(host, tag, boot, shutdown, chains));
                 }
             }
+
+            return pagesList;
         }
 
-        private String[] actionNamesFromString(String actions) {
-            for (String chainName : currentChains.keySet()) {
-                actions = actions.replace(chainName, currentChains.get(chainName));
+        private String[] actionNamesFromString(@NotNull String actions, @NotNull Map<String, String> chains) {
+            for (String chainName : chains.keySet()) {
+                actions = actions.replace(chainName, chains.get(chainName));
             }
             return trimStringArray(actions.split(","));
         }
@@ -497,7 +569,7 @@ public class EazeProjectStructure {
                     loadPagesForHost(host);
                 }
                 String path = host.getPagePathByURL(url);
-                ArrayList<EazePage> hostPages = pages.get(host);
+                List<EazePage> hostPages = pages.get(host);
                 if (hostPages != null) {
                     for (EazePage page : hostPages) {
                         boolean matched;
@@ -509,68 +581,10 @@ public class EazeProjectStructure {
                         }
 
                         if (matched) {
-                            String templateName = page.getTemplatePath();
-                            String[] actions = page.getActions();
-                            for (int i = actions.length - 1; i >= 0; i--) {
-                                String fullActionName = actions[i];
-                                EazeAction action = getActionByFullName(fullActionName);
-                                if (action != null) {
-                                    VirtualFile file = action.getFile();
-                                    if (file != null) {
-                                        String fileName = action.getFile().getPath();
-                                        MyListElement el = new MyListElement(fileName, file, "action", fullActionName);
-                                        elements.add(el);
-                                    }
-                                }
-                            }
-
-                            if (!templateName.isEmpty()) {
-                                VirtualFile file = page.getFile();
-
-                                if (file != null) {
-                                    MyListElement el = new MyListElement(templateName, file, "tmpl", "");
-                                    elements.add(el);
-
-                                    PsiFile psiTemplate = PsiManager.getInstance(project).findFile(file);
-                                    String text = psiTemplate != null ? psiTemplate.getText() : "";
-                                    List<List<String>> rez = new ArrayList<List<String>>();
-                                    RegexpUtils.preg_match_all("/\\{increal:(.+?)\\}/", text, rez);
-
-                                    for (List<String> aRez : rez) {
-                                        String templatePath = aRez.get(1);
-                                        if (templatePath != null) {
-                                            String translatedPath = host.translateEazePath(templatePath);
-                                            VirtualFile templateFile = webDir.findFileByRelativePath(translatedPath);
-                                            if (templateFile != null) {
-                                                MyListElement _el = new MyListElement(templateFile.getName(), templateFile, "tmpl", "", true);
-                                                elements.add(_el);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            actions = page.getBootActions();
-                            for (String fullActionName : actions) {
-                                EazeAction action = getActionByFullName(fullActionName);
-                                if (action != null) {
-                                    VirtualFile file = action.getFile();
-                                    String fileName = action.getFile().getPath();
-                                    MyListElement el = new MyListElement(fileName, file, "boot", fullActionName);
-                                    elements.add(el);
-                                }
-                            }
-
-                            actions = page.getShutdownActions();
-                            for (String fullActionName : actions) {
-                                EazeAction action = getActionByFullName(fullActionName);
-                                if (action != null) {
-                                    VirtualFile file = action.getFile();
-                                    String fileName = action.getFile().getPath();
-                                    MyListElement el = new MyListElement(fileName, file, "shutdown", fullActionName);
-                                    elements.add(el);
-                                }
-                            }
+                            elements.addAll(listActionElements(page.getActions(), "action"));
+                            elements.addAll(listTemplateElements(page.getTemplatePath(), page.getFile(), host));
+                            elements.addAll(listActionElements(page.getBootActions(), "boot"));
+                            elements.addAll(listActionElements(page.getShutdownActions(), "shutdown"));
                             return elements.toArray();
                         }
                     }
@@ -579,5 +593,47 @@ public class EazeProjectStructure {
             return elements.toArray();
         }
 
+        private List<MyListElement> listActionElements(String[] actions, @NotNull String description) {
+            List<MyListElement> elements = new ArrayList<MyListElement>();
+            for (String fullActionName : actions) {
+                EazeAction action = getActionByFullName(fullActionName);
+                if (action != null) {
+                    VirtualFile file = action.getFile();
+                    if (file != null) {
+                        String fileName = action.getFile().getPath();
+                        MyListElement el = new MyListElement(fileName, file, description, fullActionName);
+                        elements.add(el);
+                    }
+                }
+            }
+            return elements;
+        }
+
+        private List<MyListElement> listTemplateElements(String templateName, VirtualFile templateFile, @NotNull EazeSite.Host host) {
+            List<MyListElement> elements = new ArrayList<MyListElement>();
+
+            if (templateName != null && !templateName.isEmpty() && templateFile != null) {
+                MyListElement el = new MyListElement(templateName, templateFile, "tmpl", "");
+                elements.add(el);
+
+                PsiFile psiTemplate = PsiManager.getInstance(project).findFile(templateFile);
+                String text = psiTemplate != null ? psiTemplate.getText() : "";
+                List<List<String>> rez = new ArrayList<List<String>>();
+                RegexpUtils.preg_match_all("/\\{increal:(.+?)\\}/", text, rez);
+
+                for (List<String> aRez : rez) {
+                    String templatePath = aRez.get(1);
+                    if (templatePath != null) {
+                        String translatedPath = host.translateEazePath(templatePath);
+                        templateFile = webDir.findFileByRelativePath(translatedPath);
+                        if (templateFile != null) {
+                            MyListElement _el = new MyListElement(templateFile.getName(), templateFile, "tmpl", "", true);
+                            elements.add(_el);
+                        }
+                    }
+                }
+            }
+            return elements;
+        }
     }
 }

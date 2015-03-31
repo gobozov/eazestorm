@@ -6,77 +6,107 @@ import com.intellij.openapi.fileChooser.FileSystemTree;
 import com.intellij.openapi.fileChooser.FileSystemTreeFactory;
 import com.intellij.openapi.fileChooser.ex.FileSystemTreeFactoryImpl;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
-import java.util.List;
 
 public class SettingsForm extends JPanel implements Disposable {
 
-    private boolean isModified;
+    private static final String LABEL_WEB_DIR = "Web directory name";
+    private static final String LABEL_ENABLE_PAGES_CACHE_CHECKSUM = "Verify checksum for pages.xml cache";
 
-    final private FileSystemTree fileTree;
-    private VirtualFile initialSelectedFile;
+    final private FileSystemTree webDir;
+    final private JCheckBox enablePagesCacheChecksum;
+
+    private VirtualFile initialWebDir;
+    private boolean initialEnablePagesCacheChecksum;
 
     public SettingsForm(@NotNull Settings settings) {
-        setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+        setLayout(new GridLayoutManager(2, 1));
 
         @NotNull final JPanel treePanel = new JPanel(new BorderLayout());
         @NotNull final Border border = new CompoundBorder(new EtchedBorder(EtchedBorder.LOWERED), new EmptyBorder(3, 5, 3, 5));
-        treePanel.setBorder(new TitledBorder(border, "EazeStorm Settings"));
-
-        @NotNull final JPanel gridWrapper = new JPanel(new GridLayout(1, 2));
-        gridWrapper.add(new JLabel("Web directory name"));
-        gridWrapper.add(new JLabel());
-        treePanel.add(gridWrapper, BorderLayout.NORTH);
-
+        treePanel.setBorder(new TitledBorder(border, LABEL_WEB_DIR));
         FileSystemTreeFactory treeFactory = new FileSystemTreeFactoryImpl();
         FileChooserDescriptor descriptor = new FileChooserDescriptor(false, true, false, false, false, false);
         descriptor.withTreeRootVisible(true);
         descriptor.setRoots(settings.getProject().getBaseDir());
-        fileTree = treeFactory.createFileSystemTree(settings.getProject(), descriptor);
-        fileTree.addListener(new FileSystemTree.Listener() {
-            @Override
-            public void selectionChanged(List<VirtualFile> selection) {
-                isModified = !selection.isEmpty() && selection.get(0) != null && !selection.get(0).equals(initialSelectedFile);
-            }
-        }, fileTree);
-        treePanel.add(fileTree.getTree(), BorderLayout.CENTER);
-        add(treePanel);
+        webDir = treeFactory.createFileSystemTree(settings.getProject(), descriptor);
+        treePanel.add(webDir.getTree(), BorderLayout.CENTER);
+        add(treePanel, new GridConstraints(0, 0, 1, 1,GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+                GridConstraints.SIZEPOLICY_CAN_GROW | GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                GridConstraints.SIZEPOLICY_CAN_GROW | GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                null, null, null));
+
+        enablePagesCacheChecksum = new JCheckBox(LABEL_ENABLE_PAGES_CACHE_CHECKSUM);
+        add(enablePagesCacheChecksum, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+                GridConstraints.SIZEPOLICY_CAN_GROW | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED,
+                null, null, null));
 
         reset(settings);
     }
 
     public boolean isModified() {
-        return isModified;
+        return isWebDirModified() || isEnablePagesCacheChecksumModified();
+    }
+
+    private boolean isWebDirModified() {
+        VirtualFile selection = webDir.getSelectedFile();
+        return selection != null && !selection.equals(initialWebDir);
+    }
+
+    private boolean isEnablePagesCacheChecksumModified() {
+        return enablePagesCacheChecksum.isSelected() != initialEnablePagesCacheChecksum;
     }
 
     public void reset(Settings settings) {
+        resetWebDir(settings);
+        resetEnablePagesCacheChecksum(settings);
+    }
+
+    private void resetWebDir(Settings settings) {
         String webDirPath = settings.getWebDir();
-        VirtualFile webDir = settings.getProject().getBaseDir().findFileByRelativePath(webDirPath);
-        if (webDir != null) {
-            fileTree.select(webDir, null);
-            initialSelectedFile = webDir;
+        VirtualFile webDirFile = settings.getProject().getBaseDir().findFileByRelativePath(webDirPath);
+        if (webDirFile != null) {
+            webDir.select(webDirFile, null);
+            initialWebDir = webDirFile;
         } else {
-            fileTree.getTree().clearSelection();
+            webDir.getTree().clearSelection();
         }
-        isModified = false;
+    }
+
+    private void resetEnablePagesCacheChecksum(Settings settings) {
+        boolean enabled = settings.isPagesCacheChecksumEnabled();
+        enablePagesCacheChecksum.setSelected(enabled);
+        initialEnablePagesCacheChecksum = enabled;
     }
 
     public void apply(Settings settings) {
-        VirtualFile selectedFile = fileTree.getSelectedFile();
-        if (selectedFile != null) {
+        applyWebDir(settings);
+        applyEnablePagesCacheChecksum(settings);
+    }
+
+    private void applyWebDir(Settings settings) {
+        VirtualFile selectedFile = webDir.getSelectedFile();
+        if (selectedFile != null && settings.getProject().getBasePath() != null) {
             String webDirPath = selectedFile.getPath().replace(settings.getProject().getBasePath(), "");
             settings.setWebDir(webDirPath);
-            initialSelectedFile = selectedFile;
+            initialWebDir = selectedFile;
         }
-        isModified = false;
+    }
+
+    private void applyEnablePagesCacheChecksum(Settings settings) {
+        boolean selected = enablePagesCacheChecksum.isSelected();
+        settings.setPagesCacheChecksumEnabled(selected);
+        initialEnablePagesCacheChecksum = selected;
     }
 
     @Override
     public void dispose() {
-        fileTree.dispose();
+        webDir.dispose();
     }
 }
