@@ -1,38 +1,29 @@
 package ru.eaze.settings;
 
-import com.intellij.ide.DataManager;
-import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.Nls;
-import ru.eaze.settings.Settings;
-import ru.eaze.settings.SettingsForm;
+import org.jetbrains.annotations.NotNull;
+import ru.eaze.indexes.IndexUtil;
 
 import javax.swing.*;
 
-/**
- * Created with IntelliJ IDEA.
- * User: gb
- * Date: 23.09.12
- * Time: 21:23
- * To change this template use File | Settings | File Templates.
- */
-public class EazeSettingsPanel  implements Configurable {
+public class EazeSettingsPanel implements Configurable {
 
     private SettingsForm form;
     private Settings settings;
+
+    private final Project project;
+
+    public EazeSettingsPanel(@NotNull Project project) {
+        this.project = project;
+    }
 
     @Nls
     @Override
     public String getDisplayName() {
         return "EazeStorm";
-    }
-
-    @Override
-    public Icon getIcon() {
-        return null;
     }
 
     @Override
@@ -43,9 +34,7 @@ public class EazeSettingsPanel  implements Configurable {
     @Override
     public JComponent createComponent() {
         if (form == null) {
-            DataContext dataContext = DataManager.getInstance().getDataContext();
-            Project project = PlatformDataKeys.PROJECT.getData(dataContext);
-            settings = new Settings(project);
+            settings = Settings.forProject(project);
             form = new SettingsForm(settings);
         }
         return form;
@@ -58,16 +47,17 @@ public class EazeSettingsPanel  implements Configurable {
 
     @Override
     public void apply() throws ConfigurationException {
-          settings.setStringValue(Settings.KEY_WEB_DIR, form.getPathValue());
+        form.apply(settings);
+        IndexUtil.reindex();
     }
 
     @Override
     public void reset() {
-
+        form.reset(settings);
     }
 
     @Override
     public void disposeUIResources() {
-
+        form.dispose();
     }
 }

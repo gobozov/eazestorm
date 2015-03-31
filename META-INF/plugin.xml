@@ -1,40 +1,47 @@
 <idea-plugin version="2">
     <name>EazeStorm</name>
     <description>Eaze framework integration for PhpStorm
-        Authors: Sergey Svistunov (zenden2k@gmail.com) Georgy Gobozov (gobozov@gmail.com)
+        Authors: Sergey Svistunov (zenden2k@gmail.com) Georgy Gobozov (gobozov@gmail.com) Olesia Lavrichenko (lisovenok@gmail.com)
     </description>
-    <version>0.3.1</version>
+    <version>2.2.5</version>
     <vendor url="http://www.1adw.ru/" email="gobozov@gmail.com">1ADW</vendor>
-    <idea-version since-build="8000"/>
-
-    <application-components>
-        <!-- Add your application components here -->
-    </application-components>
-
-    <project-components>
-        <!-- Add your project components here -->
-        <component>
-            <implementation-class>ru.eaze.component.EazeStormProjectComponent</implementation-class>
-        </component>
-
-    </project-components>
+    <idea-version since-build="139.0"/>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.jetbrains.php</depends>
+
     <actions>
-        <!-- Add your actions here -->
-        <action id="EazeStorm" class="ru.eaze.action.JumpToEazeAction" text="Jump to Eaze Action">
+        <action id="EazeStorm.JumpToEazeAction" class="ru.eaze.action.JumpToEazeAction" text="Jump to Eaze Action">
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift P"/>
+        </action>
+        <action class="ru.eaze.locale.action.ExportLocaleAction" id="EazeStorm.ExportLocalization" text="Export Localization" icon="EazeStormIcons.Export">
+            <keyboard-shortcut first-keystroke="ctrl shift T" keymap="$default"/>
+            <add-to-group group-id="EditorPopupMenu"/>
         </action>
     </actions>
 
     <extensions defaultExtensionNs="com.intellij">
-        <psi.referenceContributor implementation="ru.eaze.MyPsiReferenceContributor"/>
-        <!-- Add your extensions here -->
         <projectConfigurable instance="ru.eaze.settings.EazeSettingsPanel"/>
+
+        <!-- Eaze Actions and URIs -->
+        <fileBasedIndex implementation="ru.eaze.indexes.EazeActionsIndex" />
+        <fileBasedIndex implementation="ru.eaze.indexes.EazePathIndex" />
+        <psi.referenceContributor implementation="ru.eaze.reference.EazeReferenceContributor"/>
+
+        <!-- Eaze Localization -->
+        <fileBasedIndex implementation="ru.eaze.indexes.EazeLocaleKeyIndex"/>
+        <fileBasedIndex implementation="ru.eaze.indexes.EazeLocaleUsagesIndex"/>
+        <fileBasedIndex implementation="ru.eaze.indexes.EazeLocaleKeyPrefixIndex"/>
+        <pom.declarationSearcher implementation="ru.eaze.locale.EazeLocaleDeclarationSearcher"/>
+        <psi.referenceContributor implementation="ru.eaze.locale.reference.EazeLocaleReferenceContributor"/>
+        <annotator language="PHP" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
+        <annotator language="XML" implementationClass="ru.eaze.locale.EazeLocaleAnnotator"/>
+        <elementDescriptionProvider implementation="ru.eaze.locale.EazeLocaleDescriptionProvider"/>
+        <completion.contributor language="PHP" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionContributor"/>
+        <completion.contributor language="HTML" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionContributor"/>
+        <completion.confidence language="PHP" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.PHP"/>
+        <completion.confidence language="HTML" implementationClass="ru.eaze.locale.completion.EazeLocaleCompletionConfidence" order="first" id="EazeStorm.EazeLocale.HTML"/>
+        <findUsagesHandlerFactory implementation="ru.eaze.locale.findUsages.EazeLocaleFindUsagesHandlerFactory"/>
+        <renameHandler implementation="ru.eaze.locale.refactoring.EazeLocaleRenameHandler"/>
     </extensions>
-    <module-components>
-        <component>
-            <implementation-class>ru.eaze.component.EazeStormModuleComponent</implementation-class>
-        </component>
-    </module-components>
 </idea-plugin>

@@ -104,15 +104,17 @@ public class RegexpUtils {
     public static boolean preg_match(String pattern, String input, List <String> rez) {
         Pattern p = compile(pattern, false);
         Matcher m = p.matcher(input);
-        final int gcount = m.groupCount();
         if (rez != null)
             rez.clear();
-        if (m.matches())
+        if (m.matches()) {
+            final int gcount = m.groupCount();
             for (int i = 0; i <= gcount; i++) {
                 if (rez != null)
                     rez.add(m.group(i));
             }
-        return rez.size() > 0;
+            return true;
+        }
+        return false;
     }
 
     /**

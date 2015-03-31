@@ -1,73 +1,78 @@
 package ru.eaze.reference;
 
-import com.intellij.openapi.project.Project;
+import com.intellij.codeInsight.completion.CompletionUtilCore;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.xml.XmlTag;
-import com.intellij.psi.xml.XmlAttribute;
+import com.intellij.psi.PsiReferenceBase;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.eaze.domain.EazeAction;
-import ru.eaze.domain.EazePackage;
 import ru.eaze.domain.EazeProjectStructure;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 /**
- * Created by IntelliJ IDEA.
- * User: user
- * Date: 27.01.12
- * Time: 0:20
- * To change this template use File | Settings | File Templates.
+ * Reference to action declaration in actions.xml
  */
+public class EazeActionReference extends PsiReferenceBase<PsiElement> {
 
-public class EazeActionReference extends MyXmlTagReference {
-    private String actionName;
+    private final String actionName;
 
-    public EazeActionReference(String actionName, PsiElement element, TextRange textRange, EazeProjectStructure structure, Project project) {
-        super(element, textRange, structure, project);
+    public EazeActionReference(@NotNull String actionName, @NotNull PsiElement element, @NotNull TextRange textRange) {
+        super(element, textRange);
         this.actionName = actionName;
     }
 
     @Nullable
     public PsiElement resolve() {
-
-
+        EazeProjectStructure structure = EazeProjectStructure.forProject(this.getElement().getProject());
         if (structure == null) {
             return null;
         }
-
         EazeAction action = structure.getActionByFullName(actionName);
         if (action != null) {
-            XmlTag actionTag = action.getXmlTag();
-            if (action != null) {
-                XmlAttribute attr = actionTag.getAttribute("name");
-                if (attr != null) {
-                    return attr.getValueElement();
-                }
-                return actionTag;
-            }
-
+            return action.getNavigationElement();
         }
-
-
         return null;
     }
 
+    @NotNull
     public String getCanonicalText() {
         return actionName;
-        // return "lol";//getText();
+    }
+
+    @NotNull
+    @Override
+    public Object[] getVariants() {
+        EazeProjectStructure structure = EazeProjectStructure.forProject(getElement().getProject());
+        if (structure != null) {
+            Collection<String> names = structure.getAvailableActionNames();
+            Collection<String> variants = new ArrayList<String>();
+            int dummy = actionName.indexOf(CompletionUtilCore.DUMMY_IDENTIFIER_TRIMMED);
+            String prefix = dummy > 0 ? actionName.substring(0, dummy) : actionName;
+            for (String name : names) {
+                if (name.startsWith(prefix)) {
+                    int index = name.indexOf(".", prefix.length());
+                    if (index > 0) {
+                        variants.add(name.substring(0, index));
+                    } else {
+                        variants.add(name);
+                    }
+                }
+            }
+            return variants.toArray(new Object[variants.size()]);
+        }
+        return new Object[0];
     }
 
     @Override
-    public Object[] getVariants() {
-        String[] tokens = actionName.split("\\.");
-        if (tokens.length > 1) {
-            String packageName = tokens[0] + "." + tokens[1];
-            EazePackage pack = structure.getPackageByName(packageName);
-            if (pack != null) {
-                return pack.getAvailableActionNames();
-            }
+    public boolean isReferenceTo(PsiElement element) {
+        return resolve() == element;
+    }
 
-        }
-        return structure.getAvailablePackageNames();
-
+    @Override
+    public String toString() {
+        return this.getCanonicalText();
     }
 }

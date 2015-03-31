@@ -711,7 +711,7 @@ public abstract class MyPopupBase {
                 close(false);
                 return Boolean.TRUE;
             }
-        }).setFocusable(true).setRequestFocus(true).setForceHeavyweight(true).setModalContext(false).setCancelOnClickOutside(false);
+        }).setFocusable(true).setRequestFocus(true).setModalContext(false).setCancelOnClickOutside(false);
 
         Point point = new Point(x, y);
         SwingUtilities.convertPointToScreen(point, layeredPane);
@@ -721,23 +721,10 @@ public abstract class MyPopupBase {
         myTextPopup.setLocation(bounds.getLocation());
 
         new MnemonicHelper().register(myTextFieldPanel);
-        final boolean previousUpdate;
-        final DaemonCodeAnalyzer daemonCodeAnalyzer = DaemonCodeAnalyzer.getInstance(myProject);
+        DaemonCodeAnalyzer daemonCodeAnalyzer = DaemonCodeAnalyzer.getInstance(myProject);
         if (daemonCodeAnalyzer != null) {
-            previousUpdate = ((DaemonCodeAnalyzerImpl) daemonCodeAnalyzer).isUpdateByTimerEnabled();
-            daemonCodeAnalyzer.setUpdateByTimerEnabled(false);
-        } else {
-            previousUpdate = false;
+            daemonCodeAnalyzer.disableUpdateByTimer(myTextPopup);
         }
-
-        Disposer.register(myTextPopup, new Disposable() {
-            //@Override
-            public void dispose() {
-                if (daemonCodeAnalyzer != null) {
-                    daemonCodeAnalyzer.setUpdateByTimerEnabled(previousUpdate);
-                }
-            }
-        });
         myTextPopup.show(layeredPane);
     }
 
@@ -1155,7 +1142,7 @@ return uniqueElement == null ? Collections.emptyList() : Collections.singletonLi
             try {
                 super.processKeyEvent(e);
             } catch (NullPointerException e1) {
-                if (!Patches.SUN_BUG_6322854) {
+                if (!Patches.SUN_BUG_ID_6322854) {
                     throw e1;
                 }
             }

@@ -1,45 +1,40 @@
 package ru.eaze.domain;
 
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlTag;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-
-/**
- * Created with IntelliJ IDEA.
- * User: gb
- * Date: 23.09.12
- * Time: 20:21
- * To change this template use File | Settings | File Templates.
- */
 public class EazeAction {
 
-    private String name;
-    private String path;
-    private VirtualFile file;
-    private XmlTag element;
-    HashMap<String, EazeAction> chainActions = new HashMap<String, EazeAction>();
+    private final String name;
+    private final XmlTag element;
+    private final VirtualFile file;
 
-    public EazeAction(String name, String path, VirtualFile file, XmlTag element) {
+    public EazeAction(@NotNull String name, @NotNull XmlTag element, VirtualFile file) {
         this.name = name;
-        this.path = path;
         this.file = file;
         this.element = element;
     }
 
+    @NotNull
     public  String getName() {
         return name;
     }
 
-    public String getPath() {
-        return path;
-    }
-
+    @Nullable
     public VirtualFile getFile() {
         return file;
     }
 
-    public XmlTag getXmlTag() {
+    @NotNull
+    public PsiElement getNavigationElement() {
+        XmlAttribute name = element.getAttribute("name");
+        if (name != null && name.getValueElement() != null) {
+            return name.getValueElement();
+        }
         return element;
     }
 }

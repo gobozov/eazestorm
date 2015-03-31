@@ -1,47 +1,45 @@
 package ru.eaze.reference;
 
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiManager;
-import com.intellij.psi.xml.XmlTag;
+import com.intellij.psi.PsiReferenceBase;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.eaze.domain.EazeProjectStructure;
 
 /**
- * Created by IntelliJ IDEA.
- * User: user
- * Date: 27.01.12
- * Time: 1:38
- * To change this template use File | Settings | File Templates.
+ * Reference to action php file
  */
-public class EazeActionPhpReference extends MyXmlTagReference {
-    private String actionName;
-    private XmlTag actionTag;
+public class EazeActionPhpReference extends PsiReferenceBase<PsiElement> {
 
-    public EazeActionPhpReference(XmlTag actionTag, String actionName, PsiElement element, TextRange textRange, EazeProjectStructure structure, Project project) {
-        super(element, textRange, structure, project);
-        this.actionName = actionName;
-        this.actionTag = actionTag;
+    private final String actionPath;
+
+    public EazeActionPhpReference(@NotNull String actionPath, @NotNull PsiElement element, @NotNull TextRange textRange) {
+        super(element, textRange);
+        this.actionPath = actionPath;
     }
 
     @Nullable
     public PsiElement resolve() {
-        if (structure == null) {
+        if (actionPath.isEmpty()) {
             return null;
         }
-
-        //   XmlTag actionTag = (XmlTag)element;
-        VirtualFile file = EazeProjectStructure.GetFileByActionTag(actionTag);
+        VirtualFile file = this.getElement().getProject().getBaseDir().findFileByRelativePath(actionPath);
         if (file != null) {
-            return PsiManager.getInstance(project).findFile(file);
+            return PsiManager.getInstance(this.getElement().getProject()).findFile(file);
         }
-
         return null;
     }
 
-    public String getCanonicalText() {
-        return actionName;
+    @NotNull
+    @Override
+    public Object[] getVariants() {
+        return new Object[0];
+    }
+
+    @Override
+    public String toString() {
+        return this.getCanonicalText();
     }
 }
